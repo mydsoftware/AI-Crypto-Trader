@@ -3,6 +3,8 @@ PACT-OS
 Main Entry Point
 """
 
+from database.database import Database
+from database.market_repository import MarketRepository
 from exchange.tabdeal_client import TabdealClient
 from market.scanner import MarketScanner
 
@@ -15,7 +17,6 @@ def banner() -> None:
 
 
 def print_ticker(ticker) -> None:
-
     print(f"\n{ticker.symbol}")
     print("-" * 40)
     print(f"Last Price : {ticker.last_price:,.0f}")
@@ -25,27 +26,26 @@ def print_ticker(ticker) -> None:
     print(f"Spread %   : {ticker.spread_percent:.4f}")
 
 
-def main():
+def main() -> None:
 
     banner()
 
     client = TabdealClient()
 
-    print("\nConnecting to Tabdeal...")
+    database = Database()
+    session = database.session()
 
-    print("✓ Ping")
-    client.ping()
-
-    print("✓ Server Time")
-    client.server_time()
+    repository = MarketRepository(session)
 
     scanner = MarketScanner(client)
 
-    print("\nScanning WatchList...")
+    print("\nScanning market...")
 
     tickers = scanner.scan()
 
-    print(f"\nMarkets Scanned : {len(tickers)}")
+    repository.save_all(tickers)
+
+    print(f"\nSaved {len(tickers)} market snapshots.")
 
     print("\n" + "=" * 70)
 
@@ -55,6 +55,8 @@ def main():
     print("\n" + "=" * 70)
     print("PACT-OS READY")
     print("=" * 70)
+
+    session.close()
 
 
 if __name__ == "__main__":

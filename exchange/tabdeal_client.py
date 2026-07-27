@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from tabdeal.spot import Spot
 
-from models.trade import Trade
 from models.orderbook import OrderBook
+from models.trade import Trade
 
 
 class TabdealClient:
@@ -34,18 +34,19 @@ class TabdealClient:
         return self._client.exchange_info()
 
     def symbols(self) -> list[str]:
-        markets = self.exchange_info()
-        return [item["symbol"] for item in markets]
+        return [item["symbol"] for item in self.exchange_info()]
 
     def find_symbol(self, symbol: str):
-
         for market in self.exchange_info():
             if market["symbol"] == symbol:
                 return market
-
         return None
 
-    def trades(self, symbol: str, limit: int | None = None):
+    def trades(
+        self,
+        symbol: str,
+        limit: int | None = None,
+    ) -> list[Trade]:
 
         data = self._client.trades(
             symbol=symbol,
@@ -54,7 +55,11 @@ class TabdealClient:
 
         return [Trade.from_api(item) for item in data]
 
-    def depth(self, symbol: str, limit: int | None = None):
+    def depth(
+        self,
+        symbol: str,
+        limit: int | None = None,
+    ) -> OrderBook:
 
         data = self._client.depth(
             symbol=symbol,

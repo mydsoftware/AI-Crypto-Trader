@@ -4,8 +4,9 @@ Main Entry Point
 """
 
 from analysis.ema import calculate as ema
-from analysis.rsi import calculate as rsi
 from analysis.macd import calculate as macd
+from analysis.rsi import calculate as rsi
+from analysis.signal_engine import evaluate
 
 from config import COLLECTOR_MODE
 
@@ -40,10 +41,13 @@ def print_analysis(database: Database) -> None:
 
     prices = database.last_prices("BTCIRT", limit=100)
 
-    # MACD حداقل به 35 قیمت نیاز دارد
     if len(prices) < 35:
         print("\nNot enough historical data.")
         return
+
+    # =========================
+    # Indicators
+    # =========================
 
     ema9 = ema(prices, 9)
     ema21 = ema(prices, 21)
@@ -52,61 +56,44 @@ def print_analysis(database: Database) -> None:
 
     macd_result = macd(prices)
 
+    # =========================
+    # Signal Engine
+    # =========================
+
+    result = evaluate(
+        ema9=ema9,
+        ema21=ema21,
+        rsi14=rsi14,
+        macd=macd_result["macd"],
+        signal=macd_result["signal"],
+    )
+
     print("\n" + "=" * 70)
     print("BTCIRT ANALYSIS")
     print("=" * 70)
 
-    # =========================
-    # EMA
-    # =========================
-
-    print(f"EMA(9)  : {ema9:,.0f}")
-    print(f"EMA(21) : {ema21:,.0f}")
-
-    if ema9 > ema21:
-        trend = "BULLISH 📈"
-    elif ema9 < ema21:
-        trend = "BEARISH 📉"
-    else:
-        trend = "SIDEWAYS ➖"
-
-    print(f"Trend   : {trend}")
+    print(f"EMA(9)      : {ema9:,.0f}")
+    print(f"EMA(21)     : {ema21:,.0f}")
+    print(f"EMA Signal  : {result['details']['ema']}")
 
     print()
 
-    # =========================
-    # RSI
-    # =========================
-
-    print(f"RSI(14) : {rsi14:.2f}")
-
-    if rsi14 >= 70:
-        rsi_signal = "OVERBOUGHT 🔴"
-    elif rsi14 <= 30:
-        rsi_signal = "OVERSOLD 🟢"
-    else:
-        rsi_signal = "NEUTRAL 🟡"
-
-    print(f"RSI     : {rsi_signal}")
+    print(f"RSI(14)     : {rsi14:.2f}")
+    print(f"RSI Signal  : {result['details']['rsi']}")
 
     print()
 
-    # =========================
-    # MACD
-    # =========================
+    print(f"MACD        : {macd_result['macd']:,.2f}")
+    print(f"Signal Line : {macd_result['signal']:,.2f}")
+    print(f"Histogram   : {macd_result['histogram']:,.2f}")
+    print(f"MACD Signal : {result['details']['macd']}")
 
-    print(f"MACD    : {macd_result['macd']:,.2f}")
-    print(f"Signal  : {macd_result['signal']:,.2f}")
-    print(f"Hist    : {macd_result['histogram']:,.2f}")
+    print("\n" + "-" * 70)
 
-    if macd_result["macd"] > macd_result["signal"]:
-        macd_signal = "BUY 🟢"
-    elif macd_result["macd"] < macd_result["signal"]:
-        macd_signal = "SELL 🔴"
-    else:
-        macd_signal = "HOLD 🟡"
+    print(f"FINAL SCORE : {result['score']} / 3")
+    print(f"SIGNAL      : {result['signal']}")
 
-    print(f"MACD    : {macd_signal}")
+    print("-" * 70)
 
 
 def run_once() -> None:

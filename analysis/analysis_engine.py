@@ -14,6 +14,8 @@ from config import HISTORY_LIMIT
 
 from database.database import Database
 
+from models.analysis_result import AnalysisResult
+
 
 class AnalysisEngine:
 
@@ -21,7 +23,7 @@ class AnalysisEngine:
 
         self.database = database
 
-    def analyze(self, symbol: str) -> dict | None:
+    def analyze(self, symbol: str) -> AnalysisResult | None:
 
         prices = self.database.last_prices(
             symbol,
@@ -38,7 +40,7 @@ class AnalysisEngine:
 
         macd_result = macd(prices)
 
-        signal = evaluate(
+        signal_result = evaluate(
             ema9=ema9,
             ema21=ema21,
             rsi14=rsi14,
@@ -46,21 +48,23 @@ class AnalysisEngine:
             signal=macd_result["signal"],
         )
 
-        return {
+        return AnalysisResult(
 
-            "symbol": symbol,
+            symbol=symbol,
 
-            "ema9": ema9,
-            "ema21": ema21,
+            ema9=ema9,
+            ema21=ema21,
 
-            "rsi": rsi14,
+            rsi=rsi14,
 
-            "macd": macd_result["macd"],
-            "signal_line": macd_result["signal"],
-            "histogram": macd_result["histogram"],
+            macd=macd_result["macd"],
+            signal_line=macd_result["signal"],
+            histogram=macd_result["histogram"],
 
-            "score": signal["score"],
-            "signal": signal["signal"],
+            score=signal_result["score"],
+            signal=signal_result["signal"],
 
-            "details": signal["details"],
-        }
+            ema_signal=signal_result["details"]["ema"],
+            rsi_signal=signal_result["details"]["rsi"],
+            macd_signal=signal_result["details"]["macd"],
+        )

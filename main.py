@@ -31,7 +31,7 @@ def print_ticker(ticker) -> None:
     print(f"Spread %   : {ticker.spread_percent:.4f}")
 
 
-def print_analysis(result: dict | None) -> None:
+def print_analysis(result) -> None:
 
     if result is None:
 
@@ -41,25 +41,25 @@ def print_analysis(result: dict | None) -> None:
 
     print("-" * 70)
 
-    print(f"EMA Signal   : {result['details']['ema']}")
-    print(f"RSI Signal   : {result['details']['rsi']}")
-    print(f"MACD Signal  : {result['details']['macd']}")
+    print(f"EMA Signal   : {result.ema_signal}")
+    print(f"RSI Signal   : {result.rsi_signal}")
+    print(f"MACD Signal  : {result.macd_signal}")
 
     print()
 
-    print(f"EMA(9)       : {result['ema9']:,.2f}")
-    print(f"EMA(21)      : {result['ema21']:,.2f}")
+    print(f"EMA(9)       : {result.ema9:,.2f}")
+    print(f"EMA(21)      : {result.ema21:,.2f}")
 
-    print(f"RSI(14)      : {result['rsi']:.2f}")
+    print(f"RSI(14)      : {result.rsi:.2f}")
 
-    print(f"MACD         : {result['macd']:.2f}")
-    print(f"Signal Line  : {result['signal_line']:.2f}")
-    print(f"Histogram    : {result['histogram']:.2f}")
+    print(f"MACD         : {result.macd:.2f}")
+    print(f"Signal Line  : {result.signal_line:.2f}")
+    print(f"Histogram    : {result.histogram:.2f}")
 
     print()
 
-    print(f"Score        : {result['score']}")
-    print(f"Final Signal : {result['signal']}")
+    print(f"Score        : {result.score}")
+    print(f"Final Signal : {result.signal}")
 
 
 def run() -> None:
@@ -95,9 +95,7 @@ def run() -> None:
 
         print(f"\n{ticker.symbol}")
 
-        result = engine.analyze(
-            ticker.symbol,
-        )
+        result = engine.analyze(ticker.symbol)
 
         print_analysis(result)
 

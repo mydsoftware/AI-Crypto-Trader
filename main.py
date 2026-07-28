@@ -5,6 +5,7 @@ Main Entry Point
 
 from analysis.ema import calculate as ema
 from analysis.rsi import calculate as rsi
+from analysis.macd import calculate as macd
 
 from config import COLLECTOR_MODE
 
@@ -39,17 +40,25 @@ def print_analysis(database: Database) -> None:
 
     prices = database.last_prices("BTCIRT", limit=100)
 
-    if len(prices) < 21:
+    # MACD حداقل به 35 قیمت نیاز دارد
+    if len(prices) < 35:
         print("\nNot enough historical data.")
         return
 
     ema9 = ema(prices, 9)
     ema21 = ema(prices, 21)
+
     rsi14 = rsi(prices, 14)
+
+    macd_result = macd(prices)
 
     print("\n" + "=" * 70)
     print("BTCIRT ANALYSIS")
     print("=" * 70)
+
+    # =========================
+    # EMA
+    # =========================
 
     print(f"EMA(9)  : {ema9:,.0f}")
     print(f"EMA(21) : {ema21:,.0f}")
@@ -65,18 +74,39 @@ def print_analysis(database: Database) -> None:
 
     print()
 
+    # =========================
+    # RSI
+    # =========================
+
     print(f"RSI(14) : {rsi14:.2f}")
 
     if rsi14 >= 70:
-        signal = "OVERBOUGHT 🔴"
-
+        rsi_signal = "OVERBOUGHT 🔴"
     elif rsi14 <= 30:
-        signal = "OVERSOLD 🟢"
-
+        rsi_signal = "OVERSOLD 🟢"
     else:
-        signal = "NEUTRAL 🟡"
+        rsi_signal = "NEUTRAL 🟡"
 
-    print(f"RSI     : {signal}")
+    print(f"RSI     : {rsi_signal}")
+
+    print()
+
+    # =========================
+    # MACD
+    # =========================
+
+    print(f"MACD    : {macd_result['macd']:,.2f}")
+    print(f"Signal  : {macd_result['signal']:,.2f}")
+    print(f"Hist    : {macd_result['histogram']:,.2f}")
+
+    if macd_result["macd"] > macd_result["signal"]:
+        macd_signal = "BUY 🟢"
+    elif macd_result["macd"] < macd_result["signal"]:
+        macd_signal = "SELL 🔴"
+    else:
+        macd_signal = "HOLD 🟡"
+
+    print(f"MACD    : {macd_signal}")
 
 
 def run_once() -> None:

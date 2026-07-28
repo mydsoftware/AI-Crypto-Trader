@@ -8,6 +8,8 @@ from analysis.macd import calculate as macd
 from analysis.rsi import calculate as rsi
 from analysis.signal_engine import evaluate
 
+from config import HISTORY_LIMIT
+
 from database.database import Database
 
 from exchange.tabdeal_client import TabdealClient
@@ -34,15 +36,20 @@ def print_ticker(ticker) -> None:
     print(f"Spread %   : {ticker.spread_percent:.4f}")
 
 
-def print_analysis(database: Database) -> None:
+def analyze_symbol(database: Database, symbol: str) -> None:
 
-    prices = database.last_prices("BTCIRT", limit=100)
+    prices = database.last_prices(
+        symbol,
+        limit=HISTORY_LIMIT,
+    )
 
     if len(prices) < 35:
-        print("\nNot enough historical data.")
+
+        print(f"\n{symbol}")
+        print("-" * 70)
+        print("Not enough historical data.")
         return
 
-    # Indicators
     ema9 = ema(prices, 9)
     ema21 = ema(prices, 21)
 
@@ -50,7 +57,7 @@ def print_analysis(database: Database) -> None:
 
     macd_result = macd(prices)
 
-    signal = evaluate(
+    result = evaluate(
         ema9=ema9,
         ema21=ema21,
         rsi14=rsi14,
@@ -58,30 +65,28 @@ def print_analysis(database: Database) -> None:
         signal=macd_result["signal"],
     )
 
-    print("\n" + "=" * 70)
-    print("BTCIRT ANALYSIS")
-    print("=" * 70)
-
-    print(f"EMA(9)      : {ema9:,.0f}")
-    print(f"EMA(21)     : {ema21:,.0f}")
-    print(f"EMA Signal  : {signal['details']['ema']}")
-
-    print()
-
-    print(f"RSI(14)     : {rsi14:.2f}")
-    print(f"RSI Signal  : {signal['details']['rsi']}")
-
-    print()
-
-    print(f"MACD        : {macd_result['macd']:,.2f}")
-    print(f"Signal Line : {macd_result['signal']:,.2f}")
-    print(f"Histogram   : {macd_result['histogram']:,.2f}")
-    print(f"MACD Signal : {signal['details']['macd']}")
-
-    print("\n" + "-" * 70)
-    print(f"FINAL SCORE : {signal['score']} / 3")
-    print(f"SIGNAL      : {signal['signal']}")
+    print(f"\n{symbol}")
     print("-" * 70)
+
+    print(f"EMA Signal   : {result['details']['ema']}")
+    print(f"RSI Signal   : {result['details']['rsi']}")
+    print(f"MACD Signal  : {result['details']['macd']}")
+
+    print()
+
+    print(f"EMA(9)       : {ema9:,.2f}")
+    print(f"EMA(21)      : {ema21:,.2f}")
+
+    print(f"RSI(14)      : {rsi14:.2f}")
+
+    print(f"MACD         : {macd_result['macd']:.2f}")
+    print(f"Signal Line  : {macd_result['signal']:.2f}")
+    print(f"Histogram    : {macd_result['histogram']:.2f}")
+
+    print()
+
+    print(f"Score        : {result['score']}")
+    print(f"Final Signal : {result['signal']}")
 
 
 def run() -> None:
@@ -98,10 +103,25 @@ def run() -> None:
 
     print(f"\nMarkets : {len(tickers)}")
 
+    print("\n")
+    print("=" * 70)
+    print("MARKET OVERVIEW")
+    print("=" * 70)
+
     for ticker in tickers:
         print_ticker(ticker)
 
-    print_analysis(database)
+    print("\n")
+    print("=" * 70)
+    print("TECHNICAL ANALYSIS")
+    print("=" * 70)
+
+    for ticker in tickers:
+
+        analyze_symbol(
+            database,
+            ticker.symbol,
+        )
 
 
 def main() -> None:
@@ -110,7 +130,8 @@ def main() -> None:
 
     run()
 
-    print("\n" + "=" * 70)
+    print("\n")
+    print("=" * 70)
     print("PACT-OS READY")
     print("=" * 70)
 

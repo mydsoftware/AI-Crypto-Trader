@@ -1,14 +1,34 @@
 """
-PACT-OS Configuration
+PACT-OS
+Configuration
 """
 
-# اجرای Collector
-COLLECTOR_MODE = True
+from pathlib import Path
 
-# فاصله هر اسکن (ثانیه)
-SCAN_INTERVAL = 5
+# =====================================================
+# Project Paths
+# =====================================================
 
-# ارزهای مورد نظر
+BASE_DIR = Path(__file__).resolve().parent
+
+DATABASE_PATH = BASE_DIR / "database" / "market.db"
+
+# =====================================================
+# Collector
+# =====================================================
+
+COLLECT_INTERVAL = 5
+
+# =====================================================
+# Analysis
+# =====================================================
+
+HISTORY_LIMIT = 100
+
+# =====================================================
+# Watch List
+# =====================================================
+
 WATCHLIST = [
     "BTCIRT",
     "ETHIRT",

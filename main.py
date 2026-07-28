@@ -3,12 +3,7 @@ PACT-OS
 Main Entry Point
 """
 
-from analysis.ema import calculate as ema
-from analysis.macd import calculate as macd
-from analysis.rsi import calculate as rsi
-from analysis.signal_engine import evaluate
-
-from config import HISTORY_LIMIT
+from analysis.analysis_engine import AnalysisEngine
 
 from database.database import Database
 
@@ -36,36 +31,14 @@ def print_ticker(ticker) -> None:
     print(f"Spread %   : {ticker.spread_percent:.4f}")
 
 
-def analyze_symbol(database: Database, symbol: str) -> None:
+def print_analysis(result: dict | None) -> None:
 
-    prices = database.last_prices(
-        symbol,
-        limit=HISTORY_LIMIT,
-    )
+    if result is None:
 
-    if len(prices) < 35:
-
-        print(f"\n{symbol}")
         print("-" * 70)
         print("Not enough historical data.")
         return
 
-    ema9 = ema(prices, 9)
-    ema21 = ema(prices, 21)
-
-    rsi14 = rsi(prices, 14)
-
-    macd_result = macd(prices)
-
-    result = evaluate(
-        ema9=ema9,
-        ema21=ema21,
-        rsi14=rsi14,
-        macd=macd_result["macd"],
-        signal=macd_result["signal"],
-    )
-
-    print(f"\n{symbol}")
     print("-" * 70)
 
     print(f"EMA Signal   : {result['details']['ema']}")
@@ -74,14 +47,14 @@ def analyze_symbol(database: Database, symbol: str) -> None:
 
     print()
 
-    print(f"EMA(9)       : {ema9:,.2f}")
-    print(f"EMA(21)      : {ema21:,.2f}")
+    print(f"EMA(9)       : {result['ema9']:,.2f}")
+    print(f"EMA(21)      : {result['ema21']:,.2f}")
 
-    print(f"RSI(14)      : {rsi14:.2f}")
+    print(f"RSI(14)      : {result['rsi']:.2f}")
 
-    print(f"MACD         : {macd_result['macd']:.2f}")
-    print(f"Signal Line  : {macd_result['signal']:.2f}")
-    print(f"Histogram    : {macd_result['histogram']:.2f}")
+    print(f"MACD         : {result['macd']:.2f}")
+    print(f"Signal Line  : {result['signal_line']:.2f}")
+    print(f"Histogram    : {result['histogram']:.2f}")
 
     print()
 
@@ -97,13 +70,15 @@ def run() -> None:
 
     database = Database()
 
+    engine = AnalysisEngine(database)
+
     tickers = scanner.scan()
 
     database.save_markets(tickers)
 
     print(f"\nMarkets : {len(tickers)}")
 
-    print("\n")
+    print()
     print("=" * 70)
     print("MARKET OVERVIEW")
     print("=" * 70)
@@ -111,17 +86,20 @@ def run() -> None:
     for ticker in tickers:
         print_ticker(ticker)
 
-    print("\n")
+    print()
     print("=" * 70)
     print("TECHNICAL ANALYSIS")
     print("=" * 70)
 
     for ticker in tickers:
 
-        analyze_symbol(
-            database,
+        print(f"\n{ticker.symbol}")
+
+        result = engine.analyze(
             ticker.symbol,
         )
+
+        print_analysis(result)
 
 
 def main() -> None:
@@ -130,7 +108,7 @@ def main() -> None:
 
     run()
 
-    print("\n")
+    print()
     print("=" * 70)
     print("PACT-OS READY")
     print("=" * 70)

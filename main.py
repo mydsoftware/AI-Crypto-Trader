@@ -8,13 +8,10 @@ from analysis.macd import calculate as macd
 from analysis.rsi import calculate as rsi
 from analysis.signal_engine import evaluate
 
-from config import COLLECTOR_MODE
-
 from database.database import Database
 
 from exchange.tabdeal_client import TabdealClient
 
-from market.collector import run_collector
 from market.scanner import MarketScanner
 
 
@@ -45,10 +42,7 @@ def print_analysis(database: Database) -> None:
         print("\nNot enough historical data.")
         return
 
-    # =========================
     # Indicators
-    # =========================
-
     ema9 = ema(prices, 9)
     ema21 = ema(prices, 21)
 
@@ -56,11 +50,7 @@ def print_analysis(database: Database) -> None:
 
     macd_result = macd(prices)
 
-    # =========================
-    # Signal Engine
-    # =========================
-
-    result = evaluate(
+    signal = evaluate(
         ema9=ema9,
         ema21=ema21,
         rsi14=rsi14,
@@ -74,29 +64,27 @@ def print_analysis(database: Database) -> None:
 
     print(f"EMA(9)      : {ema9:,.0f}")
     print(f"EMA(21)     : {ema21:,.0f}")
-    print(f"EMA Signal  : {result['details']['ema']}")
+    print(f"EMA Signal  : {signal['details']['ema']}")
 
     print()
 
     print(f"RSI(14)     : {rsi14:.2f}")
-    print(f"RSI Signal  : {result['details']['rsi']}")
+    print(f"RSI Signal  : {signal['details']['rsi']}")
 
     print()
 
     print(f"MACD        : {macd_result['macd']:,.2f}")
     print(f"Signal Line : {macd_result['signal']:,.2f}")
     print(f"Histogram   : {macd_result['histogram']:,.2f}")
-    print(f"MACD Signal : {result['details']['macd']}")
+    print(f"MACD Signal : {signal['details']['macd']}")
 
     print("\n" + "-" * 70)
-
-    print(f"FINAL SCORE : {result['score']} / 3")
-    print(f"SIGNAL      : {result['signal']}")
-
+    print(f"FINAL SCORE : {signal['score']} / 3")
+    print(f"SIGNAL      : {signal['signal']}")
     print("-" * 70)
 
 
-def run_once() -> None:
+def run() -> None:
 
     client = TabdealClient()
 
@@ -120,10 +108,7 @@ def main() -> None:
 
     banner()
 
-    if COLLECTOR_MODE:
-        run_collector()
-    else:
-        run_once()
+    run()
 
     print("\n" + "=" * 70)
     print("PACT-OS READY")

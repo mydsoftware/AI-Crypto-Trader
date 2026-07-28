@@ -3,7 +3,7 @@ PACT-OS Configuration
 """
 
 # اجرای Collector
-COLLECTOR_MODE = False
+COLLECTOR_MODE = True
 
 # فاصله هر اسکن (ثانیه)
 SCAN_INTERVAL = 5

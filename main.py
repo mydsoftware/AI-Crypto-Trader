@@ -11,6 +11,10 @@ from analysis.mtf import (
     MTFEngine,
     TimeframeSignal,
 )
+from analysis.ranking import (
+    RankingEngine,
+    Opportunity,
+)
 
 from database.database import Database
 from database.repository import CandleRepository
@@ -28,7 +32,7 @@ from portfolio.portfolio import Portfolio
 from risk.risk_manager import RiskManager
 
 
-def banner() -> None:
+def banner():
 
     print("=" * 70)
     print("                 PACT-OS")
@@ -36,7 +40,7 @@ def banner() -> None:
     print("=" * 70)
 
 
-def print_market_trend(trend) -> None:
+def print_market_trend(trend):
 
     print()
     print("=" * 70)
@@ -45,11 +49,39 @@ def print_market_trend(trend) -> None:
 
     print(f"Trend        : {trend.trend}")
     print(f"Strength     : {trend.strength}%")
+    print()
+
+
+def print_ranking(opportunities):
+
+    print("=" * 70)
+    print("TOP OPPORTUNITIES")
+    print("=" * 70)
+
+    print(
+        f"{'Rank':<6}"
+        f"{'Symbol':<10}"
+        f"{'Signal':<10}"
+        f"{'Score':<8}"
+        f"{'Confidence'}"
+    )
+
+    print("-" * 70)
+
+    for index, item in enumerate(opportunities, start=1):
+
+        print(
+            f"{index:<6}"
+            f"{item.symbol:<10}"
+            f"{item.signal:<10}"
+            f"{item.score:<8}"
+            f"{item.confidence}%"
+        )
 
     print()
 
 
-def print_ticker(ticker) -> None:
+def print_ticker(ticker):
 
     print(f"\n{ticker.symbol}")
     print("-" * 40)
@@ -60,7 +92,7 @@ def print_ticker(ticker) -> None:
     print(f"Spread %   : {ticker.spread_percent:.4f}")
 
 
-def print_portfolio(portfolio: Portfolio) -> None:
+def print_portfolio(portfolio):
 
     print()
     print("=" * 70)
@@ -71,7 +103,7 @@ def print_portfolio(portfolio: Portfolio) -> None:
     print(f"Positions : {len(portfolio.positions)}")
 
 
-def print_risk(risk: RiskManager) -> None:
+def print_risk(risk):
 
     print()
     print("=" * 70)
@@ -82,11 +114,7 @@ def print_risk(risk: RiskManager) -> None:
     print(f"Max Positions    : {risk.max_open_positions}")
 
 
-def print_analysis(
-    result,
-    ticker,
-    journal: TradeJournal,
-) -> None:
+def print_analysis(result, ticker, journal):
 
     if result is None:
 
@@ -155,6 +183,7 @@ def print_analysis(
     print("MTF ANALYSIS")
 
     for item in mtf.signals:
+
         print(f"{item.timeframe:<4} -> {item.signal}")
 
     print()
@@ -172,6 +201,7 @@ def print_analysis(
     print("Reasons")
 
     for reason in explanation.reasons:
+
         print(f"  ✓ {reason}")
 
     print()
@@ -182,9 +212,7 @@ def print_analysis(
     print(f"Reason       : {decision.reason}")
 
 
-def print_journal(
-    journal: TradeJournal,
-) -> None:
+def print_journal(journal):
 
     print()
     print("=" * 70)
@@ -194,7 +222,7 @@ def print_journal(
     print(f"Total Records : {journal.total_trades}")
 
 
-def run() -> None:
+def run():
 
     client = TabdealClient()
 
@@ -212,6 +240,8 @@ def run() -> None:
 
     journal = TradeJournal()
 
+    ranking_engine = RankingEngine()
+
     tickers = scanner.scan()
 
     database.save_markets(tickers)
@@ -219,6 +249,8 @@ def run() -> None:
     analysis_results = {}
 
     market_signals = []
+
+    opportunities = []
 
     for ticker in tickers:
 
@@ -228,11 +260,38 @@ def run() -> None:
 
         analysis_results[ticker.symbol] = result
 
-        if result is not None:
-            market_signals.append(result.signal)
+        if result is None:
+            continue
+
+        market_signals.append(
+            result.signal
+        )
+
+        confidence = ConfidenceEngine().evaluate(
+            result.score
+        )
+
+        opportunities.append(
+
+            Opportunity(
+
+                symbol=ticker.symbol,
+
+                score=result.score,
+
+                confidence=confidence.score,
+
+                signal=result.signal,
+            )
+
+        )
 
     market_trend = MarketTrendEngine().evaluate(
         market_signals
+    )
+
+    ranking = ranking_engine.rank(
+        opportunities
     )
 
     print_market_trend(
@@ -242,6 +301,7 @@ def run() -> None:
     print(f"Markets : {len(tickers)}")
 
     print()
+
     print("=" * 70)
     print("MARKET OVERVIEW")
     print("=" * 70)
@@ -253,7 +313,8 @@ def run() -> None:
 
     print_risk(risk)
 
-    print()
+    print_ranking(ranking)
+
     print("=" * 70)
     print("TECHNICAL ANALYSIS")
     print("=" * 70)
@@ -273,7 +334,7 @@ def run() -> None:
     print_journal(journal)
 
 
-def main() -> None:
+def main():
 
     banner()
 

@@ -35,6 +35,12 @@ from config import WATCHLIST
 
 from market.watchlist_engine import WatchlistEngine
 
+from config import WATCHLIST
+
+from market.watchlist_engine import (
+    WatchlistEngine,
+)
+
 def banner():
 
     print("=" * 70)
@@ -177,6 +183,31 @@ def print_analysis(result, ticker, journal):
 
     print()
 
+    print("SUPPORT / RESISTANCE")
+    print()
+
+    print(
+        f"Support       : "
+        f"{result.support:,.0f}"
+    )
+
+    print(
+        f"Resistance    : "
+        f"{result.resistance:,.0f}"
+    )
+
+    print(
+        f"Distance S    : "
+        f"{result.distance_to_support:,.0f}"
+    )
+
+    print(
+        f"Distance R    : "
+        f"{result.distance_to_resistance:,.0f}"
+    )
+
+    print()
+
     print("CONFIDENCE")
     print(f"Score        : {confidence.score}%")
     print(f"Level        : {confidence.level}")
@@ -306,7 +337,7 @@ def run():
     )
 
     print_watchlist(
-    watchlist
+        watchlist
     )
 
     print(f"Markets : {len(tickers)}")

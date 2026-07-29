@@ -6,6 +6,10 @@ Main Entry Point
 from analysis.analysis_engine import AnalysisEngine
 from analysis.confidence import ConfidenceEngine
 from analysis.explanation import ExplanationEngine
+from analysis.mtf import (
+    MTFEngine,
+    TimeframeSignal,
+)
 
 from database.database import Database
 from database.repository import CandleRepository
@@ -84,8 +88,19 @@ def print_analysis(
         result
     )
 
+    mtf = MTFEngine().evaluate(
+
+        [
+            TimeframeSignal("5m", result.signal),
+            TimeframeSignal("15m", result.signal),
+            TimeframeSignal("1h", result.signal),
+            TimeframeSignal("4h", result.signal),
+        ]
+
+    )
+
     decision = DecisionEngine().decide(
-        result.signal
+        mtf.overall
     )
 
     journal.add(
@@ -128,6 +143,24 @@ def print_analysis(
     print("CONFIDENCE")
     print(f"Score        : {confidence.score}%")
     print(f"Level        : {confidence.level}")
+
+    print()
+
+    print("MTF ANALYSIS")
+
+    for item in mtf.signals:
+
+        print(f"{item.timeframe:<4} -> {item.signal}")
+
+    print()
+
+    print(
+        f"Agreement   : {mtf.agreement * 100:.0f}%"
+    )
+
+    print(
+        f"Overall     : {mtf.overall}"
+    )
 
     print()
 

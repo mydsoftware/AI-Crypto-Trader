@@ -5,6 +5,7 @@ Main Entry Point
 
 from analysis.analysis_engine import AnalysisEngine
 from analysis.confidence import ConfidenceEngine
+from analysis.explanation import ExplanationEngine
 
 from database.database import Database
 from database.repository import CandleRepository
@@ -79,6 +80,10 @@ def print_analysis(
         result.score
     )
 
+    explanation = ExplanationEngine().explain(
+        result
+    )
+
     decision = DecisionEngine().decide(
         result.signal
     )
@@ -123,6 +128,19 @@ def print_analysis(
     print("CONFIDENCE")
     print(f"Score        : {confidence.score}%")
     print(f"Level        : {confidence.level}")
+
+    print()
+
+    print("EXPLANATION")
+    print(f"Summary      : {explanation.summary}")
+
+    print()
+
+    print("Reasons")
+
+    for reason in explanation.reasons:
+
+        print(f"  ✓ {reason}")
 
     print()
 

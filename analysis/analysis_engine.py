@@ -7,6 +7,9 @@ from __future__ import annotations
 
 from analysis.indicators import IndicatorPipeline
 from analysis.signal_engine import evaluate
+from analysis.support_resistance import (
+    SupportResistanceEngine,
+)
 
 from config import HISTORY_LIMIT
 
@@ -23,6 +26,10 @@ class AnalysisEngine:
     ):
 
         self.repository = repository
+
+        self.support_resistance = (
+            SupportResistanceEngine()
+        )
 
     def analyze(
         self,
@@ -41,6 +48,10 @@ class AnalysisEngine:
             prices,
         )
 
+        sr = self.support_resistance.calculate(
+            prices,
+        )
+
         signal_result = evaluate(
             ema9=indicators.ema9,
             ema21=indicators.ema21,
@@ -51,7 +62,15 @@ class AnalysisEngine:
 
         return AnalysisResult(
 
+            # ======================================
+            # Symbol
+            # ======================================
+
             symbol=symbol,
+
+            # ======================================
+            # Indicators
+            # ======================================
 
             ema9=indicators.ema9,
             ema21=indicators.ema21,
@@ -61,6 +80,25 @@ class AnalysisEngine:
             macd=indicators.macd,
             signal_line=indicators.signal,
             histogram=indicators.histogram,
+
+            # ======================================
+            # Support / Resistance
+            # ======================================
+
+            support=sr.support,
+            resistance=sr.resistance,
+
+            distance_to_support=(
+                sr.distance_to_support
+            ),
+
+            distance_to_resistance=(
+                sr.distance_to_resistance
+            ),
+
+            # ======================================
+            # Final Result
+            # ======================================
 
             score=signal_result["score"],
             signal=signal_result["signal"],

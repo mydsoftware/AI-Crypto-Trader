@@ -9,7 +9,15 @@ from dataclasses import dataclass
 @dataclass(slots=True)
 class AnalysisResult:
 
+    # ==========================================
+    # Symbol
+    # ==========================================
+
     symbol: str
+
+    # ==========================================
+    # Indicators
+    # ==========================================
 
     ema9: float
     ema21: float
@@ -19,6 +27,20 @@ class AnalysisResult:
     macd: float
     signal_line: float
     histogram: float
+
+    # ==========================================
+    # Support / Resistance
+    # ==========================================
+
+    support: float
+    resistance: float
+
+    distance_to_support: float
+    distance_to_resistance: float
+
+    # ==========================================
+    # Final Signal
+    # ==========================================
 
     score: int
     signal: str

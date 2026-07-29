@@ -5,9 +5,7 @@ Analysis Engine
 
 from __future__ import annotations
 
-from analysis.ema import calculate as ema
-from analysis.macd import calculate as macd
-from analysis.rsi import calculate as rsi
+from analysis.indicators import IndicatorPipeline
 from analysis.signal_engine import evaluate
 
 from config import HISTORY_LIMIT
@@ -33,33 +31,30 @@ class AnalysisEngine:
         if len(prices) < 35:
             return None
 
-        ema9 = ema(prices, 9)
-        ema21 = ema(prices, 21)
-
-        rsi14 = rsi(prices, 14)
-
-        macd_result = macd(prices)
+        indicators = IndicatorPipeline.from_prices(
+            prices,
+        )
 
         signal_result = evaluate(
-            ema9=ema9,
-            ema21=ema21,
-            rsi14=rsi14,
-            macd=macd_result["macd"],
-            signal=macd_result["signal"],
+            ema9=indicators.ema9,
+            ema21=indicators.ema21,
+            rsi14=indicators.rsi,
+            macd=indicators.macd,
+            signal=indicators.signal,
         )
 
         return AnalysisResult(
 
             symbol=symbol,
 
-            ema9=ema9,
-            ema21=ema21,
+            ema9=indicators.ema9,
+            ema21=indicators.ema21,
 
-            rsi=rsi14,
+            rsi=indicators.rsi,
 
-            macd=macd_result["macd"],
-            signal_line=macd_result["signal"],
-            histogram=macd_result["histogram"],
+            macd=indicators.macd,
+            signal_line=indicators.signal,
+            histogram=indicators.histogram,
 
             score=signal_result["score"],
             signal=signal_result["signal"],

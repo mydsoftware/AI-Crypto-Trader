@@ -5,7 +5,7 @@ Signal Engine
 
 from __future__ import annotations
 
-from analysis.rules import RuleEngine
+from analysis.strategy import DefaultStrategy
 
 
 def evaluate(
@@ -20,7 +20,9 @@ def evaluate(
 
 ) -> dict:
 
-    rule_engine = RuleEngine(
+    strategy = DefaultStrategy()
+
+    result = strategy.evaluate(
 
         ema9=ema9,
         ema21=ema21,
@@ -31,8 +33,6 @@ def evaluate(
         signal=signal,
 
     )
-
-    result = rule_engine.evaluate()
 
     if result.score >= 2:
 

@@ -14,6 +14,8 @@ from execution.trade_executor import TradeExecutor
 
 from exchange.tabdeal_client import TabdealClient
 
+from journal.trade_journal import TradeJournal
+
 from market.scanner import MarketScanner
 
 from orders.order_manager import OrderManager
@@ -64,7 +66,11 @@ def print_risk(risk: RiskManager) -> None:
     print(f"Max Positions    : {risk.max_open_positions}")
 
 
-def print_analysis(result, ticker) -> None:
+def print_analysis(
+    result,
+    ticker,
+    journal: TradeJournal,
+) -> None:
 
     if result is None:
 
@@ -72,7 +78,9 @@ def print_analysis(result, ticker) -> None:
         print("Not enough historical data.")
         return
 
-    decision = DecisionEngine().decide(result.signal)
+    decision = DecisionEngine().decide(
+        result.signal
+    )
 
     order = OrderManager().create(
 
@@ -88,6 +96,20 @@ def print_analysis(result, ticker) -> None:
 
     execution = TradeExecutor().execute(
         decision.action
+    )
+
+    journal.add(
+
+        symbol=order.symbol,
+
+        action=order.action,
+
+        quantity=order.quantity,
+
+        price=order.price,
+
+        status=order.status,
+
     )
 
     print("-" * 70)
@@ -135,6 +157,18 @@ def print_analysis(result, ticker) -> None:
     print(f"Message      : {execution.message}")
 
 
+def print_journal(
+    journal: TradeJournal,
+) -> None:
+
+    print()
+    print("=" * 70)
+    print("TRADE JOURNAL")
+    print("=" * 70)
+
+    print(f"Total Trades : {journal.total_trades}")
+
+
 def run() -> None:
 
     client = TabdealClient()
@@ -150,6 +184,8 @@ def run() -> None:
     portfolio = Portfolio()
 
     risk = RiskManager()
+
+    journal = TradeJournal()
 
     tickers = scanner.scan()
 
@@ -185,7 +221,10 @@ def run() -> None:
         print_analysis(
             result,
             ticker,
+            journal,
         )
+
+    print_journal(journal)
 
 
 def main() -> None:

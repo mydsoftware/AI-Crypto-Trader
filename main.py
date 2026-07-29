@@ -8,11 +8,15 @@ from analysis.analysis_engine import AnalysisEngine
 from database.database import Database
 from database.repository import CandleRepository
 
+from decision.decision_engine import DecisionEngine
+
 from exchange.tabdeal_client import TabdealClient
 
 from market.scanner import MarketScanner
 
 from portfolio.portfolio import Portfolio
+
+from risk.risk_manager import RiskManager
 
 
 def banner() -> None:
@@ -34,6 +38,28 @@ def print_ticker(ticker) -> None:
     print(f"Spread %   : {ticker.spread_percent:.4f}")
 
 
+def print_portfolio(portfolio: Portfolio) -> None:
+
+    print()
+    print("=" * 70)
+    print("PORTFOLIO")
+    print("=" * 70)
+
+    print(f"Cash      : {portfolio.cash:,.2f}")
+    print(f"Positions : {len(portfolio.positions)}")
+
+
+def print_risk(risk: RiskManager) -> None:
+
+    print()
+    print("=" * 70)
+    print("RISK MANAGEMENT")
+    print("=" * 70)
+
+    print(f"Max Risk / Trade : {risk.max_risk_percent:.2f}%")
+    print(f"Max Positions    : {risk.max_open_positions}")
+
+
 def print_analysis(result) -> None:
 
     if result is None:
@@ -41,6 +67,8 @@ def print_analysis(result) -> None:
         print("-" * 70)
         print("Not enough historical data.")
         return
+
+    decision = DecisionEngine().decide(result.signal)
 
     print("-" * 70)
 
@@ -52,7 +80,6 @@ def print_analysis(result) -> None:
 
     print(f"EMA(9)       : {result.ema9:,.2f}")
     print(f"EMA(21)      : {result.ema21:,.2f}")
-
     print(f"RSI(14)      : {result.rsi:.2f}")
 
     print(f"MACD         : {result.macd:.2f}")
@@ -64,16 +91,12 @@ def print_analysis(result) -> None:
     print(f"Score        : {result.score}")
     print(f"Final Signal : {result.signal}")
 
-
-def print_portfolio(portfolio: Portfolio) -> None:
-
     print()
-    print("=" * 70)
-    print("PORTFOLIO")
-    print("=" * 70)
 
-    print(f"Cash      : {portfolio.cash:,.2f}")
-    print(f"Positions : {len(portfolio.positions)}")
+    print("DECISION")
+    print(f"Action       : {decision.action}")
+    print(f"Allowed      : {decision.allowed}")
+    print(f"Reason       : {decision.reason}")
 
 
 def run() -> None:
@@ -90,6 +113,8 @@ def run() -> None:
 
     portfolio = Portfolio()
 
+    risk = RiskManager()
+
     tickers = scanner.scan()
 
     database.save_markets(tickers)
@@ -105,6 +130,8 @@ def run() -> None:
         print_ticker(ticker)
 
     print_portfolio(portfolio)
+
+    print_risk(risk)
 
     print()
     print("=" * 70)

@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import time
 
+from config import COLLECT_INTERVAL
 from database.database import Database
 from exchange.tabdeal_client import TabdealClient
 from market.scanner import MarketScanner
-from config import SCAN_INTERVAL
 
 
 def run_collector() -> None:
@@ -38,10 +38,11 @@ def run_collector() -> None:
             print(f"Saved {len(tickers)} markets.")
 
         except Exception as exc:
+
             print(f"Error: {exc}")
 
         cycle += 1
 
-        print(f"\nWaiting {SCAN_INTERVAL} seconds...\n")
+        print(f"\nWaiting {COLLECT_INTERVAL} seconds...\n")
 
-        time.sleep(SCAN_INTERVAL)
+        time.sleep(COLLECT_INTERVAL)

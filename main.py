@@ -31,6 +31,9 @@ from portfolio.portfolio import Portfolio
 
 from risk.risk_manager import RiskManager
 
+from config import WATCHLIST
+
+from market.watchlist_engine import WatchlistEngine
 
 def banner():
 
@@ -226,8 +229,12 @@ def run():
 
     client = TabdealClient()
 
-    scanner = MarketScanner(client)
+    watchlist = WatchlistEngine()
 
+    watchlist.load(WATCHLIST)
+
+    scanner = MarketScanner(client)
+    
     database = Database()
 
     repository = CandleRepository(database)
@@ -298,6 +305,10 @@ def run():
         market_trend
     )
 
+    print_watchlist(
+    watchlist
+    )
+
     print(f"Markets : {len(tickers)}")
 
     print()
@@ -344,6 +355,22 @@ def main():
     print("=" * 70)
     print("PACT-OS READY")
     print("=" * 70)
+    
+def print_watchlist(watchlist: WatchlistEngine) -> None:
+
+    print()
+    print("=" * 70)
+    print("WATCHLIST")
+    print("=" * 70)
+
+    print(f"Symbols : {watchlist.count}")
+    print()
+
+    for symbol in watchlist.all():
+
+        print(symbol)
+
+    print()
 
 
 if __name__ == "__main__":

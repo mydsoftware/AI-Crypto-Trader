@@ -6,6 +6,7 @@ Main Entry Point
 from analysis.analysis_engine import AnalysisEngine
 from analysis.confidence import ConfidenceEngine
 from analysis.explanation import ExplanationEngine
+from analysis.market_trend import MarketTrendEngine
 from analysis.mtf import (
     MTFEngine,
     TimeframeSignal,
@@ -33,6 +34,19 @@ def banner() -> None:
     print("                 PACT-OS")
     print("      Personal AI Crypto Trading Assistant")
     print("=" * 70)
+
+
+def print_market_trend(trend) -> None:
+
+    print()
+    print("=" * 70)
+    print("MARKET TREND")
+    print("=" * 70)
+
+    print(f"Trend        : {trend.trend}")
+    print(f"Strength     : {trend.strength}%")
+
+    print()
 
 
 def print_ticker(ticker) -> None:
@@ -89,14 +103,12 @@ def print_analysis(
     )
 
     mtf = MTFEngine().evaluate(
-
         [
             TimeframeSignal("5m", result.signal),
             TimeframeSignal("15m", result.signal),
             TimeframeSignal("1h", result.signal),
             TimeframeSignal("4h", result.signal),
         ]
-
     )
 
     decision = DecisionEngine().decide(
@@ -104,17 +116,11 @@ def print_analysis(
     )
 
     journal.add(
-
         symbol=ticker.symbol,
-
         action=decision.action,
-
         quantity=0.0,
-
         price=ticker.last_price,
-
         status="ANALYSIS",
-
     )
 
     print("-" * 70)
@@ -149,18 +155,12 @@ def print_analysis(
     print("MTF ANALYSIS")
 
     for item in mtf.signals:
-
         print(f"{item.timeframe:<4} -> {item.signal}")
 
     print()
 
-    print(
-        f"Agreement   : {mtf.agreement * 100:.0f}%"
-    )
-
-    print(
-        f"Overall     : {mtf.overall}"
-    )
+    print(f"Agreement    : {mtf.agreement * 100:.0f}%")
+    print(f"Overall      : {mtf.overall}")
 
     print()
 
@@ -172,7 +172,6 @@ def print_analysis(
     print("Reasons")
 
     for reason in explanation.reasons:
-
         print(f"  ✓ {reason}")
 
     print()
@@ -217,7 +216,30 @@ def run() -> None:
 
     database.save_markets(tickers)
 
-    print(f"\nMarkets : {len(tickers)}")
+    analysis_results = {}
+
+    market_signals = []
+
+    for ticker in tickers:
+
+        result = engine.analyze(
+            ticker.symbol,
+        )
+
+        analysis_results[ticker.symbol] = result
+
+        if result is not None:
+            market_signals.append(result.signal)
+
+    market_trend = MarketTrendEngine().evaluate(
+        market_signals
+    )
+
+    print_market_trend(
+        market_trend
+    )
+
+    print(f"Markets : {len(tickers)}")
 
     print()
     print("=" * 70)
@@ -240,12 +262,10 @@ def run() -> None:
 
         print(f"\n{ticker.symbol}")
 
-        result = engine.analyze(
-            ticker.symbol,
-        )
-
         print_analysis(
-            result,
+            analysis_results.get(
+                ticker.symbol
+            ),
             ticker,
             journal,
         )

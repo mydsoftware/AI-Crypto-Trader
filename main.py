@@ -10,6 +10,8 @@ from database.repository import CandleRepository
 
 from decision.decision_engine import DecisionEngine
 
+from execution.trade_executor import TradeExecutor
+
 from exchange.tabdeal_client import TabdealClient
 
 from market.scanner import MarketScanner
@@ -70,6 +72,10 @@ def print_analysis(result) -> None:
 
     decision = DecisionEngine().decide(result.signal)
 
+    execution = TradeExecutor().execute(
+        decision.action
+    )
+
     print("-" * 70)
 
     print(f"EMA Signal   : {result.ema_signal}")
@@ -97,6 +103,13 @@ def print_analysis(result) -> None:
     print(f"Action       : {decision.action}")
     print(f"Allowed      : {decision.allowed}")
     print(f"Reason       : {decision.reason}")
+
+    print()
+
+    print("EXECUTION")
+    print(f"Executed     : {execution.executed}")
+    print(f"Action       : {execution.action}")
+    print(f"Message      : {execution.message}")
 
 
 def run() -> None:

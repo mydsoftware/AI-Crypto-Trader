@@ -12,6 +12,8 @@ from exchange.tabdeal_client import TabdealClient
 
 from market.scanner import MarketScanner
 
+from portfolio.portfolio import Portfolio
+
 
 def banner() -> None:
 
@@ -63,6 +65,17 @@ def print_analysis(result) -> None:
     print(f"Final Signal : {result.signal}")
 
 
+def print_portfolio(portfolio: Portfolio) -> None:
+
+    print()
+    print("=" * 70)
+    print("PORTFOLIO")
+    print("=" * 70)
+
+    print(f"Cash      : {portfolio.cash:,.2f}")
+    print(f"Positions : {len(portfolio.positions)}")
+
+
 def run() -> None:
 
     client = TabdealClient()
@@ -74,6 +87,8 @@ def run() -> None:
     repository = CandleRepository(database)
 
     engine = AnalysisEngine(repository)
+
+    portfolio = Portfolio()
 
     tickers = scanner.scan()
 
@@ -88,6 +103,8 @@ def run() -> None:
 
     for ticker in tickers:
         print_ticker(ticker)
+
+    print_portfolio(portfolio)
 
     print()
     print("=" * 70)

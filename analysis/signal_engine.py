@@ -5,97 +5,66 @@ Signal Engine
 
 from __future__ import annotations
 
+from analysis.rules import RuleEngine
+
 
 def evaluate(
+
     ema9: float,
     ema21: float,
+
     rsi14: float,
+
     macd: float,
     signal: float,
+
 ) -> dict:
-    """
-    Generate final trading signal.
 
-    Returns
-    -------
-    dict
-    {
-        "score": int,
-        "signal": str,
-        "details": dict
-    }
-    """
+    rule_engine = RuleEngine(
 
-    score = 0
+        ema9=ema9,
+        ema21=ema21,
 
-    details = {}
+        rsi14=rsi14,
 
-    # =====================================
-    # EMA
-    # =====================================
+        macd=macd,
+        signal=signal,
 
-    if ema9 > ema21:
-        details["ema"] = "BUY"
-        score += 1
+    )
 
-    elif ema9 < ema21:
-        details["ema"] = "SELL"
-        score -= 1
+    result = rule_engine.evaluate()
 
-    else:
-        details["ema"] = "HOLD"
+    if result.score >= 2:
 
-    # =====================================
-    # RSI
-    # =====================================
-
-    if rsi14 <= 30:
-        details["rsi"] = "BUY"
-        score += 1
-
-    elif rsi14 >= 70:
-        details["rsi"] = "SELL"
-        score -= 1
-
-    else:
-        details["rsi"] = "HOLD"
-
-    # =====================================
-    # MACD
-    # =====================================
-
-    if macd > signal:
-        details["macd"] = "BUY"
-        score += 1
-
-    elif macd < signal:
-        details["macd"] = "SELL"
-        score -= 1
-
-    else:
-        details["macd"] = "HOLD"
-
-    # =====================================
-    # Final Decision
-    # =====================================
-
-    if score >= 2:
         final_signal = "STRONG BUY"
 
-    elif score == 1:
+    elif result.score == 1:
+
         final_signal = "BUY"
 
-    elif score == 0:
+    elif result.score == 0:
+
         final_signal = "HOLD"
 
-    elif score == -1:
+    elif result.score == -1:
+
         final_signal = "SELL"
 
     else:
+
         final_signal = "STRONG SELL"
 
     return {
-        "score": score,
+
+        "score": result.score,
+
         "signal": final_signal,
-        "details": details,
+
+        "details": {
+
+            "ema": result.ema,
+            "rsi": result.rsi,
+            "macd": result.macd,
+
+        },
     }

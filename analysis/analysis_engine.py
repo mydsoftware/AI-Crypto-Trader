@@ -10,21 +10,27 @@ from analysis.signal_engine import evaluate
 
 from config import HISTORY_LIMIT
 
-from database.database import Database
+from database.repository import CandleRepository
 
 from models.analysis_result import AnalysisResult
 
 
 class AnalysisEngine:
 
-    def __init__(self, database: Database):
+    def __init__(
+        self,
+        repository: CandleRepository,
+    ):
 
-        self.database = database
+        self.repository = repository
 
-    def analyze(self, symbol: str) -> AnalysisResult | None:
+    def analyze(
+        self,
+        symbol: str,
+    ) -> AnalysisResult | None:
 
-        prices = self.database.last_prices(
-            symbol,
+        prices = self.repository.last_prices(
+            symbol=symbol,
             limit=HISTORY_LIMIT,
         )
 

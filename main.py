@@ -6,6 +6,7 @@ Main Entry Point
 from analysis.analysis_engine import AnalysisEngine
 
 from database.database import Database
+from database.repository import CandleRepository
 
 from exchange.tabdeal_client import TabdealClient
 
@@ -70,7 +71,9 @@ def run() -> None:
 
     database = Database()
 
-    engine = AnalysisEngine(database)
+    repository = CandleRepository(database)
+
+    engine = AnalysisEngine(repository)
 
     tickers = scanner.scan()
 
@@ -95,7 +98,9 @@ def run() -> None:
 
         print(f"\n{ticker.symbol}")
 
-        result = engine.analyze(ticker.symbol)
+        result = engine.analyze(
+            ticker.symbol,
+        )
 
         print_analysis(result)
 

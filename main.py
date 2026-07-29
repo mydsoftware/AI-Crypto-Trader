@@ -16,6 +16,8 @@ from exchange.tabdeal_client import TabdealClient
 
 from market.scanner import MarketScanner
 
+from orders.order_manager import OrderManager
+
 from portfolio.portfolio import Portfolio
 
 from risk.risk_manager import RiskManager
@@ -62,7 +64,7 @@ def print_risk(risk: RiskManager) -> None:
     print(f"Max Positions    : {risk.max_open_positions}")
 
 
-def print_analysis(result) -> None:
+def print_analysis(result, ticker) -> None:
 
     if result is None:
 
@@ -71,6 +73,18 @@ def print_analysis(result) -> None:
         return
 
     decision = DecisionEngine().decide(result.signal)
+
+    order = OrderManager().create(
+
+        symbol=ticker.symbol,
+
+        action=decision.action,
+
+        quantity=1.0,
+
+        price=ticker.last_price,
+
+    )
 
     execution = TradeExecutor().execute(
         decision.action
@@ -103,6 +117,15 @@ def print_analysis(result) -> None:
     print(f"Action       : {decision.action}")
     print(f"Allowed      : {decision.allowed}")
     print(f"Reason       : {decision.reason}")
+
+    print()
+
+    print("ORDER")
+    print(f"Symbol       : {order.symbol}")
+    print(f"Action       : {order.action}")
+    print(f"Quantity     : {order.quantity:.2f}")
+    print(f"Price        : {order.price:,.0f}")
+    print(f"Status       : {order.status}")
 
     print()
 
@@ -159,7 +182,10 @@ def run() -> None:
             ticker.symbol,
         )
 
-        print_analysis(result)
+        print_analysis(
+            result,
+            ticker,
+        )
 
 
 def main() -> None:

@@ -4,21 +4,18 @@ Main Entry Point
 """
 
 from analysis.analysis_engine import AnalysisEngine
+from analysis.confidence import ConfidenceEngine
 
 from database.database import Database
 from database.repository import CandleRepository
 
 from decision.decision_engine import DecisionEngine
 
-from execution.trade_executor import TradeExecutor
-
 from exchange.tabdeal_client import TabdealClient
 
 from journal.trade_journal import TradeJournal
 
 from market.scanner import MarketScanner
-
-from orders.order_manager import OrderManager
 
 from portfolio.portfolio import Portfolio
 
@@ -78,37 +75,25 @@ def print_analysis(
         print("Not enough historical data.")
         return
 
+    confidence = ConfidenceEngine().evaluate(
+        result.score
+    )
+
     decision = DecisionEngine().decide(
         result.signal
     )
 
-    order = OrderManager().create(
+    journal.add(
 
         symbol=ticker.symbol,
 
         action=decision.action,
 
-        quantity=1.0,
+        quantity=0.0,
 
         price=ticker.last_price,
 
-    )
-
-    execution = TradeExecutor().execute(
-        decision.action
-    )
-
-    journal.add(
-
-        symbol=order.symbol,
-
-        action=order.action,
-
-        quantity=order.quantity,
-
-        price=order.price,
-
-        status=order.status,
+        status="ANALYSIS",
 
     )
 
@@ -135,26 +120,16 @@ def print_analysis(
 
     print()
 
+    print("CONFIDENCE")
+    print(f"Score        : {confidence.score}%")
+    print(f"Level        : {confidence.level}")
+
+    print()
+
     print("DECISION")
     print(f"Action       : {decision.action}")
     print(f"Allowed      : {decision.allowed}")
     print(f"Reason       : {decision.reason}")
-
-    print()
-
-    print("ORDER")
-    print(f"Symbol       : {order.symbol}")
-    print(f"Action       : {order.action}")
-    print(f"Quantity     : {order.quantity:.2f}")
-    print(f"Price        : {order.price:,.0f}")
-    print(f"Status       : {order.status}")
-
-    print()
-
-    print("EXECUTION")
-    print(f"Executed     : {execution.executed}")
-    print(f"Action       : {execution.action}")
-    print(f"Message      : {execution.message}")
 
 
 def print_journal(
@@ -166,7 +141,7 @@ def print_journal(
     print("TRADE JOURNAL")
     print("=" * 70)
 
-    print(f"Total Trades : {journal.total_trades}")
+    print(f"Total Records : {journal.total_trades}")
 
 
 def run() -> None:

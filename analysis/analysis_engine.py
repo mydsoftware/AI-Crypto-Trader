@@ -5,6 +5,7 @@ Analysis Engine
 
 from __future__ import annotations
 
+from analysis.breakout import BreakoutEngine
 from analysis.indicators import IndicatorPipeline
 from analysis.signal_engine import evaluate
 from analysis.support_resistance import (
@@ -31,6 +32,10 @@ class AnalysisEngine:
             SupportResistanceEngine()
         )
 
+        self.breakout = (
+            BreakoutEngine()
+        )
+
     def analyze(
         self,
         symbol: str,
@@ -52,11 +57,25 @@ class AnalysisEngine:
             prices,
         )
 
+        breakout = self.breakout.evaluate(
+
+            current_price=prices[-1],
+
+            support=sr.support,
+
+            resistance=sr.resistance,
+        )
+
         signal_result = evaluate(
+
             ema9=indicators.ema9,
+
             ema21=indicators.ema21,
+
             rsi14=indicators.rsi,
+
             macd=indicators.macd,
+
             signal=indicators.signal,
         )
 
@@ -97,13 +116,26 @@ class AnalysisEngine:
             ),
 
             # ======================================
+            # Breakout
+            # ======================================
+
+            breakout_up=breakout.breakout_up,
+
+            breakout_down=breakout.breakout_down,
+
+            breakout_status=breakout.status,
+
+            # ======================================
             # Final Result
             # ======================================
 
             score=signal_result["score"],
+
             signal=signal_result["signal"],
 
             ema_signal=signal_result["details"]["ema"],
+
             rsi_signal=signal_result["details"]["rsi"],
+
             macd_signal=signal_result["details"]["macd"],
         )

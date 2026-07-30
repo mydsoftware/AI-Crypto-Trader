@@ -39,6 +39,15 @@ class AnalysisResult:
     distance_to_resistance: float
 
     # ==========================================
+    # Breakout
+    # ==========================================
+
+    breakout_up: bool
+    breakout_down: bool
+
+    breakout_status: str
+
+    # ==========================================
     # Final Signal
     # ==========================================
 

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from analysis.breakout import BreakoutEngine
 from analysis.breakout_filter import BreakoutFilter
+from analysis.pullback import PullbackEngine
 from analysis.indicators import IndicatorPipeline
 from analysis.signal_engine import evaluate
 from analysis.support_resistance import (
@@ -18,6 +19,8 @@ from config import HISTORY_LIMIT
 from database.repository import CandleRepository
 
 from models.analysis_result import AnalysisResult
+
+
 
 
 class AnalysisEngine:
@@ -39,6 +42,10 @@ class AnalysisEngine:
 
         self.breakout_filter = (
             BreakoutFilter()
+        )
+
+        self.pullback = (
+            PullbackEngine()
         )
 
     def analyze(
@@ -98,6 +105,33 @@ class AnalysisEngine:
                     current_price=current_price,
                     level=current_price,
                 )
+            )
+       
+        if breakout.breakout_up:
+
+            pullback = self.pullback.evaluate(
+
+                current_price=current_price,
+
+                level=sr.resistance,
+            )
+
+        elif breakout.breakout_down:
+
+            pullback = self.pullback.evaluate(
+
+                current_price=current_price,
+
+                level=sr.support,
+            )
+
+        else:
+
+            pullback = self.pullback.evaluate(
+
+                current_price=current_price,
+
+                level=current_price,
             )
 
         signal_result = evaluate(
@@ -173,6 +207,22 @@ class AnalysisEngine:
 
             breakout_threshold=(
                 breakout_filter.threshold_percent
+            ),
+
+            # ======================================
+            # Pullback
+            # ======================================
+
+            pullback_detected=(
+                pullback.detected
+            ),
+
+            pullback_status=(
+                pullback.status
+            ),
+
+            pullback_distance_percent=(
+                pullback.distance_percent
             ),
 
             # ======================================

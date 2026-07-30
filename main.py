@@ -218,6 +218,25 @@ def print_analysis(result, ticker, journal):
     )
     print()
 
+    print("PULLBACK")
+
+    print(
+        f"Status       : "
+        f"{result.pullback_status}"
+    )
+
+    print(
+        f"Detected     : "
+        f"{result.pullback_detected}"
+    )
+
+    print(
+        f"Distance %   : "
+        f"{result.pullback_distance_percent:.2f}%"
+    )
+
+    print()
+
     print("CONFIDENCE")
     print(f"Score        : {confidence.score}%")
     print(f"Level        : {confidence.level}")

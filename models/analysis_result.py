@@ -58,6 +58,16 @@ class AnalysisResult:
     breakout_threshold: float
 
     # ==========================================
+    # Pullback
+    # ==========================================
+
+    pullback_detected: bool
+
+    pullback_status: str
+
+    pullback_distance_percent: float
+
+    # ==========================================
     # Final Signal
     # ==========================================
 

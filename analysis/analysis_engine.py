@@ -7,11 +7,14 @@ from __future__ import annotations
 
 from analysis.breakout import BreakoutEngine
 from analysis.breakout_filter import BreakoutFilter
-from analysis.pullback import PullbackEngine
 from analysis.indicators import IndicatorPipeline
+from analysis.pullback import PullbackEngine
 from analysis.signal_engine import evaluate
 from analysis.support_resistance import (
     SupportResistanceEngine,
+)
+from analysis.volume_engine import (
+    VolumeEngine,
 )
 
 from config import HISTORY_LIMIT
@@ -19,8 +22,6 @@ from config import HISTORY_LIMIT
 from database.repository import CandleRepository
 
 from models.analysis_result import AnalysisResult
-
-
 
 
 class AnalysisEngine:
@@ -46,6 +47,10 @@ class AnalysisEngine:
 
         self.pullback = (
             PullbackEngine()
+        )
+
+        self.volume = (
+            VolumeEngine()
         )
 
     def analyze(
@@ -106,7 +111,7 @@ class AnalysisEngine:
                     level=current_price,
                 )
             )
-       
+
         if breakout.breakout_up:
 
             pullback = self.pullback.evaluate(
@@ -133,6 +138,18 @@ class AnalysisEngine:
 
                 level=current_price,
             )
+
+        # ======================================
+        # Volume Analysis
+        # (Temporary until Repository supports
+        # real candle volume)
+        # ======================================
+
+        volumes = [1.0] * len(prices)
+
+        volume = self.volume.evaluate(
+            volumes,
+        )
 
         signal_result = evaluate(
 
@@ -223,6 +240,30 @@ class AnalysisEngine:
 
             pullback_distance_percent=(
                 pullback.distance_percent
+            ),
+
+            # ======================================
+            # Volume
+            # ======================================
+
+            current_volume=(
+                volume.current_volume
+            ),
+
+            average_volume=(
+                volume.average_volume
+            ),
+
+            volume_ratio=(
+                volume.ratio
+            ),
+
+            high_volume=(
+                volume.high_volume
+            ),
+
+            volume_status=(
+                volume.status
             ),
 
             # ======================================

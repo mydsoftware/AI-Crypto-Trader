@@ -68,6 +68,20 @@ class AnalysisResult:
     pullback_distance_percent: float
 
     # ==========================================
+    # Volume
+    # ==========================================
+
+    current_volume: float
+
+    average_volume: float
+
+    volume_ratio: float
+
+    high_volume: bool
+
+    volume_status: str
+
+    # ==========================================
     # Final Signal
     # ==========================================
 

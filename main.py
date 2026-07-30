@@ -237,6 +237,35 @@ def print_analysis(result, ticker, journal):
 
     print()
 
+    print("VOLUME")
+
+    print(
+        f"Current Volume : "
+        f"{result.current_volume:,.2f}"
+    )
+
+    print(
+        f"Average Volume : "
+        f"{result.average_volume:,.2f}"
+    )
+
+    print(
+        f"Volume Ratio   : "
+        f"{result.volume_ratio:.2f}x"
+    )
+
+    print(
+        f"High Volume    : "
+        f"{result.high_volume}"
+    )
+
+    print(
+        f"Status         : "
+        f"{result.volume_status}"
+    )
+
+    print()
+
     print("CONFIDENCE")
     print(f"Score        : {confidence.score}%")
     print(f"Level        : {confidence.level}")

@@ -33,10 +33,6 @@ from risk.risk_manager import RiskManager
 
 from config import WATCHLIST
 
-from market.watchlist_engine import WatchlistEngine
-
-from config import WATCHLIST
-
 from market.watchlist_engine import (
     WatchlistEngine,
 )
@@ -184,6 +180,7 @@ def print_analysis(result, ticker, journal):
     print()
 
     print("SUPPORT / RESISTANCE")
+    
     print()
 
     print(
@@ -206,6 +203,19 @@ def print_analysis(result, ticker, journal):
         f"{result.distance_to_resistance:,.0f}"
     )
 
+    print()
+
+    print("BREAKOUT")
+    print(f"Status      : {result.breakout_status}")
+    print(f"Valid       : {result.breakout_valid}")
+    print(
+        f"Distance %  : "
+        f"{result.breakout_distance_percent:.2f}%"
+    )
+    print(
+        f"Threshold % : "
+        f"{result.breakout_threshold:.2f}%"
+    )
     print()
 
     print("CONFIDENCE")

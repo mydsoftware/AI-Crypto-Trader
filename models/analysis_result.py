@@ -48,6 +48,16 @@ class AnalysisResult:
     breakout_status: str
 
     # ==========================================
+    # Breakout Filter
+    # ==========================================
+
+    breakout_valid: bool
+
+    breakout_distance_percent: float
+
+    breakout_threshold: float
+
+    # ==========================================
     # Final Signal
     # ==========================================
 

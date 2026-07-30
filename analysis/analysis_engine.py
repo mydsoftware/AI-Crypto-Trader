@@ -6,6 +6,7 @@ Analysis Engine
 from __future__ import annotations
 
 from analysis.breakout import BreakoutEngine
+from analysis.breakout_filter import BreakoutFilter
 from analysis.indicators import IndicatorPipeline
 from analysis.signal_engine import evaluate
 from analysis.support_resistance import (
@@ -36,6 +37,10 @@ class AnalysisEngine:
             BreakoutEngine()
         )
 
+        self.breakout_filter = (
+            BreakoutFilter()
+        )
+
     def analyze(
         self,
         symbol: str,
@@ -57,14 +62,43 @@ class AnalysisEngine:
             prices,
         )
 
+        current_price = prices[-1]
+
         breakout = self.breakout.evaluate(
 
-            current_price=prices[-1],
+            current_price=current_price,
 
             support=sr.support,
 
             resistance=sr.resistance,
         )
+
+        if breakout.breakout_up:
+
+            breakout_filter = (
+                self.breakout_filter.validate(
+                    current_price=current_price,
+                    level=sr.resistance,
+                )
+            )
+
+        elif breakout.breakout_down:
+
+            breakout_filter = (
+                self.breakout_filter.validate(
+                    current_price=current_price,
+                    level=sr.support,
+                )
+            )
+
+        else:
+
+            breakout_filter = (
+                self.breakout_filter.validate(
+                    current_price=current_price,
+                    level=current_price,
+                )
+            )
 
         signal_result = evaluate(
 
@@ -124,6 +158,22 @@ class AnalysisEngine:
             breakout_down=breakout.breakout_down,
 
             breakout_status=breakout.status,
+
+            # ======================================
+            # Breakout Filter
+            # ======================================
+
+            breakout_valid=(
+                breakout_filter.valid
+            ),
+
+            breakout_distance_percent=(
+                breakout_filter.distance_percent
+            ),
+
+            breakout_threshold=(
+                breakout_filter.threshold_percent
+            ),
 
             # ======================================
             # Final Result

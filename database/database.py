@@ -190,3 +190,18 @@ class Database:
             ).delete()
 
             session.commit()
+
+    def last_trades(
+        self,
+        symbol: str,
+        limit: int = 200,
+    ):
+
+        from exchange.tabdeal_client import TabdealClient
+
+        client = TabdealClient()
+
+        return client.trades(
+            symbol=symbol,
+            limit=limit,
+        )

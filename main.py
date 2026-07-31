@@ -266,6 +266,64 @@ def print_analysis(result, ticker, journal):
 
     print()
 
+    print("LIQUIDITY")
+
+    print(
+        f"Equal Highs      : "
+        f"{result.equal_highs}"
+    )
+
+    print(
+        f"Equal Lows       : "
+        f"{result.equal_lows}"
+    )
+
+    print(
+        f"Buy Liquidity    : "
+        f"{result.buy_side_liquidity}"
+    )
+
+    print(
+        f"Sell Liquidity   : "
+        f"{result.sell_side_liquidity}"
+    )
+
+    print(
+        f"Zone             : "
+        f"{result.liquidity_zone}"
+    )
+
+    print()
+
+    print("ORDER FLOW")
+
+    print(
+        f"Buy Volume     : "
+        f"{result.buy_volume:.4f}"
+    )
+
+    print(
+        f"Sell Volume    : "
+        f"{result.sell_volume:.4f}"
+    )
+
+    print(
+        f"Delta          : "
+        f"{result.delta:.4f}"
+    )
+
+    print(
+        f"Imbalance      : "
+        f"{result.imbalance:.2%}"
+    )
+
+    print(
+        f"Signal         : "
+        f"{result.order_flow_signal}"
+    )
+
+    print()
+
     print("CONFIDENCE")
     print(f"Score        : {confidence.score}%")
     print(f"Level        : {confidence.level}")

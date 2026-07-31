@@ -7,13 +7,15 @@ from __future__ import annotations
 
 from database.database import Database
 
+from models.trade import Trade
+
 
 class CandleRepository:
 
     def __init__(
         self,
         database: Database,
-    ) -> None:
+    ):
 
         self.database = database
 
@@ -35,6 +37,17 @@ class CandleRepository:
     ) -> list[float]:
 
         return self.database.last_volumes(
+            symbol=symbol,
+            limit=limit,
+        )
+
+    def last_trades(
+        self,
+        symbol: str,
+        limit: int,
+    ) -> list[Trade]:
+
+        return self.database.last_trades(
             symbol=symbol,
             limit=limit,
         )

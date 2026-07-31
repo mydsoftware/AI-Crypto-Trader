@@ -13,7 +13,7 @@ class VolumeResult:
 
     current_volume: float
 
-    ratio: float
+    volume_ratio: float
 
     high_volume: bool
 
@@ -23,11 +23,8 @@ class VolumeResult:
 class VolumeEngine:
 
     def evaluate(
-
         self,
-
         volumes: list[float],
-
     ) -> VolumeResult:
 
         if not volumes:
@@ -38,7 +35,7 @@ class VolumeEngine:
 
                 current_volume=0.0,
 
-                ratio=0.0,
+                volume_ratio=0.0,
 
                 high_volume=False,
 
@@ -57,11 +54,11 @@ class VolumeEngine:
 
         if average_volume == 0:
 
-            ratio = 0.0
+            volume_ratio = 0.0
 
         else:
 
-            ratio = (
+            volume_ratio = (
 
                 current_volume
 
@@ -69,7 +66,7 @@ class VolumeEngine:
 
             )
 
-        high_volume = ratio >= 1.50
+        high_volume = volume_ratio >= 1.50
 
         return VolumeResult(
 
@@ -77,13 +74,17 @@ class VolumeEngine:
 
             current_volume=current_volume,
 
-            ratio=ratio,
+            volume_ratio=volume_ratio,
 
             high_volume=high_volume,
 
             status=(
+
                 "HIGH VOLUME"
+
                 if high_volume
+
                 else "NORMAL VOLUME"
+
             ),
         )

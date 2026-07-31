@@ -7,15 +7,13 @@ from __future__ import annotations
 
 from analysis.breakout import BreakoutEngine
 from analysis.breakout_filter import BreakoutFilter
-from analysis.indicators import IndicatorPipeline
 from analysis.pullback import PullbackEngine
+from analysis.indicators import IndicatorPipeline
 from analysis.signal_engine import evaluate
 from analysis.support_resistance import (
     SupportResistanceEngine,
 )
-from analysis.volume_engine import (
-    VolumeEngine,
-)
+from analysis.volume_engine import VolumeEngine
 
 from config import HISTORY_LIMIT
 
@@ -29,7 +27,7 @@ class AnalysisEngine:
     def __init__(
         self,
         repository: CandleRepository,
-    ):
+    ) -> None:
 
         self.repository = repository
 
@@ -63,11 +61,21 @@ class AnalysisEngine:
             limit=HISTORY_LIMIT,
         )
 
+        volumes = self.repository.last_volumes(
+            symbol=symbol,
+            limit=HISTORY_LIMIT,
+        )
+
         if len(prices) < 35:
             return None
 
-        indicators = IndicatorPipeline.from_prices(
-            prices,
+        if len(volumes) < 35:
+            return None
+
+        indicators = (
+            IndicatorPipeline.from_prices(
+                prices,
+            )
         )
 
         sr = self.support_resistance.calculate(
@@ -77,11 +85,8 @@ class AnalysisEngine:
         current_price = prices[-1]
 
         breakout = self.breakout.evaluate(
-
             current_price=current_price,
-
             support=sr.support,
-
             resistance=sr.resistance,
         )
 
@@ -115,52 +120,33 @@ class AnalysisEngine:
         if breakout.breakout_up:
 
             pullback = self.pullback.evaluate(
-
                 current_price=current_price,
-
                 level=sr.resistance,
             )
 
         elif breakout.breakout_down:
 
             pullback = self.pullback.evaluate(
-
                 current_price=current_price,
-
                 level=sr.support,
             )
 
         else:
 
             pullback = self.pullback.evaluate(
-
                 current_price=current_price,
-
                 level=current_price,
             )
 
-        # ======================================
-        # Volume Analysis
-        # (Temporary until Repository supports
-        # real candle volume)
-        # ======================================
-
-        volumes = [1.0] * len(prices)
-
-        volume = self.volume.evaluate(
+        volume_result = self.volume.evaluate(
             volumes,
         )
 
         signal_result = evaluate(
-
             ema9=indicators.ema9,
-
             ema21=indicators.ema21,
-
             rsi14=indicators.rsi,
-
             macd=indicators.macd,
-
             signal=indicators.signal,
         )
 
@@ -204,11 +190,17 @@ class AnalysisEngine:
             # Breakout
             # ======================================
 
-            breakout_up=breakout.breakout_up,
+            breakout_up=(
+                breakout.breakout_up
+            ),
 
-            breakout_down=breakout.breakout_down,
+            breakout_down=(
+                breakout.breakout_down
+            ),
 
-            breakout_status=breakout.status,
+            breakout_status=(
+                breakout.status
+            ),
 
             # ======================================
             # Breakout Filter
@@ -247,23 +239,23 @@ class AnalysisEngine:
             # ======================================
 
             current_volume=(
-                volume.current_volume
+                volume_result.current_volume
             ),
 
             average_volume=(
-                volume.average_volume
+                volume_result.average_volume
             ),
 
             volume_ratio=(
-                volume.ratio
+                volume_result.ratio
             ),
 
             high_volume=(
-                volume.high_volume
+                volume_result.high_volume
             ),
 
             volume_status=(
-                volume.status
+                volume_result.status
             ),
 
             # ======================================
@@ -274,9 +266,15 @@ class AnalysisEngine:
 
             signal=signal_result["signal"],
 
-            ema_signal=signal_result["details"]["ema"],
+            ema_signal=(
+                signal_result["details"]["ema"]
+            ),
 
-            rsi_signal=signal_result["details"]["rsi"],
+            rsi_signal=(
+                signal_result["details"]["rsi"]
+            ),
 
-            macd_signal=signal_result["details"]["macd"],
+            macd_signal=(
+                signal_result["details"]["macd"]
+            ),
         )

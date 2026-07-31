@@ -16,20 +16,42 @@ class Base(DeclarativeBase):
 
 
 class MarketSnapshot(Base):
+
     __tablename__ = "market_snapshot"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
 
-    symbol: Mapped[str] = mapped_column(String(20))
+    symbol: Mapped[str] = mapped_column(
+        String(20)
+    )
 
-    last_price: Mapped[float] = mapped_column(Float)
+    last_price: Mapped[float] = mapped_column(
+        Float
+    )
 
-    best_bid: Mapped[float] = mapped_column(Float)
+    best_bid: Mapped[float] = mapped_column(
+        Float
+    )
 
-    best_ask: Mapped[float] = mapped_column(Float)
+    best_ask: Mapped[float] = mapped_column(
+        Float
+    )
 
-    spread: Mapped[float] = mapped_column(Float)
+    spread: Mapped[float] = mapped_column(
+        Float
+    )
 
-    spread_percent: Mapped[float] = mapped_column(Float)
+    spread_percent: Mapped[float] = mapped_column(
+        Float
+    )
 
-    timestamp: Mapped[int] = mapped_column(Integer)
+    volume: Mapped[float] = mapped_column(
+        Float
+    )
+
+    timestamp: Mapped[int] = mapped_column(
+        Integer
+    )

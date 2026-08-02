@@ -6,7 +6,8 @@ Historical Data Manager
 from __future__ import annotations
 
 from database.repository import CandleRepository
-
+from market.history_cache import HistoryCache
+from market.timeframe_aggregator import TimeframeAggregator
 
 class HistoricalDataManager:
 
@@ -16,7 +17,9 @@ class HistoricalDataManager:
     ) -> None:
 
         self.repository = repository
+        self.cache = HistoryCache()
 
+        self.aggregator = TimeframeAggregator()
     def prices(
         self,
         symbol: str,
@@ -45,10 +48,33 @@ class HistoricalDataManager:
         limit: int = 500,
     ):
 
-        return self.repository.last_snapshots(
+        cached = self.cache.get(
+            symbol
+        )
+
+        if cached is not None:
+
+            return cached
+
+
+        snapshots = self.repository.last_snapshots(
             symbol=symbol,
             limit=limit,
         )
+
+
+        candles = self.aggregator.build_1m(
+            snapshots
+        )
+
+
+        self.cache.set(
+            symbol,
+            candles,
+        )
+
+
+        return candles
 
     def available(
         self,

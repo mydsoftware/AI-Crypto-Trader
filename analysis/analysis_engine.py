@@ -317,7 +317,7 @@ class AnalysisEngine:
             ),
 
             liquidity_zone=(
-                liquidity.zone
+                liquidity.liquidity_zone
             ),
 
             equal_high_price=(

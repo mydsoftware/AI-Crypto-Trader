@@ -24,6 +24,10 @@ from models.analysis_result import AnalysisResult
 
 from analysis.order_flow import OrderFlowEngine
 
+from market.history_manager import HistoricalDataManager
+
+from analysis.analysis_cache import AnalysisCache
+
 class AnalysisEngine:
 
     def __init__(
@@ -32,6 +36,10 @@ class AnalysisEngine:
     ):
 
         self.repository = repository
+
+        self.history = HistoricalDataManager(
+            repository
+        )
 
         self.support_resistance = (
             SupportResistanceEngine()
@@ -61,20 +69,30 @@ class AnalysisEngine:
             OrderFlowEngine()
         )
 
+        self.analysis_cache = AnalysisCache()
+        
     def analyze(
         self,
         symbol: str,
     ) -> AnalysisResult | None:
 
-        prices = self.repository.last_prices(
+        candles = self.history.candles(
             symbol=symbol,
             limit=HISTORY_LIMIT,
         )
 
-        volumes = self.repository.last_volumes(
-            symbol=symbol,
-            limit=HISTORY_LIMIT,
-        )
+        if len(candles) < 35:
+            return None
+
+        prices = [
+            candle.close
+            for candle in candles
+        ]
+
+        volumes = [
+            candle.volume
+            for candle in candles
+        ]
 
         if len(prices) < 35:
             return None

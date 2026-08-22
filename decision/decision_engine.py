@@ -1,7 +1,4 @@
-"""
-PACT-OS
-Decision Engine
-"""
+"""موتور تصمیم‌گیری دستیار معامله‌گر؛ بدون اجرای سفارش."""
 
 from __future__ import annotations
 
@@ -10,73 +7,24 @@ from dataclasses import dataclass
 
 @dataclass(slots=True)
 class Decision:
-
     action: str
-
     allowed: bool
-
     reason: str
 
 
 class DecisionEngine:
+    """سیگنال تحلیل را به تصمیم پیشنهادی برای کاربر تبدیل می‌کند."""
 
-    def decide(
+    def decide(self, signal: str) -> Decision:
+        normalized = str(signal).strip().upper()
 
-        self,
+        if normalized == "STRONG BUY":
+            return Decision("BUY", True, "سیگنال صعودی بسیار قوی است.")
+        if normalized == "BUY":
+            return Decision("BUY", True, "سیگنال صعودی است.")
+        if normalized == "STRONG SELL":
+            return Decision("SELL", True, "سیگنال نزولی بسیار قوی است.")
+        if normalized == "SELL":
+            return Decision("SELL", True, "سیگنال نزولی است.")
 
-        signal: str,
-
-    ) -> Decision:
-
-        if signal == "STRONG BUY":
-
-            return Decision(
-
-                action="BUY",
-
-                allowed=True,
-
-                reason="Strong bullish signal",
-            )
-
-        if signal == "BUY":
-
-            return Decision(
-
-                action="BUY",
-
-                allowed=True,
-
-                reason="Bullish signal",
-            )
-
-        if signal == "SELL":
-
-            return Decision(
-
-                action="SELL",
-
-                allowed=True,
-
-                reason="Bearish signal",
-            )
-
-        if signal == "STRONG SELL":
-
-            return Decision(
-
-                action="SELL",
-
-                allowed=True,
-
-                reason="Strong bearish signal",
-            )
-
-        return Decision(
-
-            action="HOLD",
-
-            allowed=False,
-
-            reason="No trade opportunity",
-        )
+        return Decision("HOLD", False, "فرصت معاملاتی معتبر شناسایی نشد؛ فعلاً صبر کن.")

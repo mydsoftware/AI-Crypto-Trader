@@ -30,22 +30,21 @@ class TradingAssistant:
         self.min_confidence = max(0.0, min(100.0, float(min_confidence)))
 
     @staticmethod
-    def _number(result: Any, name: str) -> float | None:
-        value = getattr(result, name, None)
+    def _number(value: Any) -> float | None:
         try:
             return float(value) if value is not None else None
         except (TypeError, ValueError):
             return None
 
-    def build_plan(self, symbol: str, result: Any, confidence: Any, decision: Any) -> TradePlan:
-        score = self._number(confidence, "score") or 0.0
+    def build_plan(self, symbol: str, result: Any, confidence: Any, decision: Any, entry: float | None = None) -> TradePlan:
+        score = self._number(getattr(confidence, "score", None)) or 0.0
         action = str(getattr(decision, "action", "HOLD")).upper()
         allowed = bool(getattr(decision, "allowed", False))
-        entry = self._number(result, "last_price") or self._number(result, "close")
-        support = self._number(result, "support")
-        resistance = self._number(result, "resistance")
-
+        entry = self._number(entry)
+        support = self._number(getattr(result, "support", None))
+        resistance = self._number(getattr(result, "resistance", None))
         signal = str(getattr(result, "signal", "HOLD")).upper()
+
         if action not in {"BUY", "SELL"} or signal not in {"BUY", "SELL", "LONG", "SHORT"}:
             action = "HOLD"
             allowed = False
@@ -56,7 +55,7 @@ class TradingAssistant:
             warnings.append("اعتماد تحلیل پایین‌تر از حداقل تعیین‌شده است.")
         if entry is None:
             allowed = False
-            warnings.append("قیمت ورود از داده تحلیل قابل استخراج نیست.")
+            warnings.append("قیمت ورود از داده بازار در دسترس نیست.")
 
         stop_loss = None
         take_profit_1 = None
@@ -80,7 +79,10 @@ class TradingAssistant:
                 risk_reward = reward / risk if risk > 0 else None
                 take_profit_2 = entry - (2 * risk)
 
-        if risk_reward is not None and risk_reward < 1.5:
+        if risk_reward is None and action in {"BUY", "SELL"}:
+            allowed = False
+            warnings.append("حد ضرر یا هدف معتبر برای محاسبه Risk/Reward پیدا نشد.")
+        elif risk_reward < 1.5:
             allowed = False
             warnings.append("نسبت سود به زیان کمتر از 1:1.5 است.")
 
@@ -88,20 +90,8 @@ class TradingAssistant:
         if not allowed and not warnings:
             warnings.append("این پیشنهاد نیاز به بررسی بیشتر دارد و مجوز ورود ندارد.")
 
-        return TradePlan(
-            symbol=symbol,
-            action=action,
-            confidence=score,
-            entry=entry,
-            stop_loss=stop_loss,
-            take_profit_1=take_profit_1,
-            take_profit_2=take_profit_2,
-            risk_reward=risk_reward,
-            risk_percent=self.risk_percent,
-            allowed=allowed,
-            reason=reason,
-            warnings=warnings,
-        )
+        return TradePlan(symbol, action, score, entry, stop_loss, take_profit_1, take_profit_2,
+                         risk_reward, self.risk_percent, allowed, reason, warnings)
 
     @staticmethod
     def render(plan: TradePlan) -> str:

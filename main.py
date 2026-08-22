@@ -59,8 +59,7 @@ def analyze_symbol(ticker, result, journal, assistant) -> None:
         TimeframeSignal("4h", result.signal),
     ])
     decision = DecisionEngine().decide(mtf.overall)
-
-    plan = assistant.build_plan(ticker.symbol, result, confidence, decision)
+    plan = assistant.build_plan(ticker.symbol, result, confidence, decision, entry=ticker.last_price)
 
     journal.add(
         symbol=ticker.symbol,
@@ -87,17 +86,14 @@ def analyze_symbol(ticker, result, journal, assistant) -> None:
     print(f"Volume       : {result.volume_status}")
     print(f"Liquidity    : {result.liquidity_zone}")
     print(f"Order Flow   : {result.order_flow_signal}")
-
     print("\nCONFIDENCE / MTF")
     print(f"Confidence   : {confidence.score}% ({confidence.level})")
     print(f"MTF Agreement: {mtf.agreement * 100:.0f}%")
     print(f"MTF Overall  : {mtf.overall}")
-
     print("\nEXPLANATION")
     print(f"{explanation.summary}")
     for reason in explanation.reasons:
         print(f"  ✓ {reason}")
-
     print(TradingAssistant.render(plan))
 
 
@@ -128,16 +124,11 @@ def run() -> None:
             continue
         market_signals.append(result.signal)
         confidence = ConfidenceEngine().evaluate(result.score)
-        opportunities.append(Opportunity(
-            symbol=ticker.symbol,
-            score=result.score,
-            confidence=confidence.score,
-            signal=result.signal,
-        ))
+        opportunities.append(Opportunity(symbol=ticker.symbol, score=result.score,
+                                          confidence=confidence.score, signal=result.signal))
 
     trend = MarketTrendEngine().evaluate(market_signals)
     ranking = ranking_engine.rank(opportunities)
-
     print(f"\nروند کلی بازار: {trend.trend} | قدرت: {trend.strength}%")
     print_watchlist(watchlist)
     print(f"\nتعداد بازارها: {len(tickers)}")
@@ -166,7 +157,7 @@ def run() -> None:
     print("\n" + "=" * 70)
     print("حالت ایمنی")
     print("=" * 70)
-    print("✓ هیچ سفارش واقعی ارسال نمی‌شود.")
+    print("✓ هیچ سفارش واقعی یا شبیه‌سازی‌شده‌ای ارسال نمی‌شود.")
     print("✓ تصمیم نهایی با کاربر است.")
     print("✓ خروجی سیستم فقط تحلیل، هشدار و برنامه معاملاتی است.")
     print(f"✓ رکوردهای تحلیل: {journal.total_trades}")

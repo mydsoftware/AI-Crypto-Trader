@@ -9,6 +9,7 @@ type Opp = {
 };
 type Brief = { symbol: string; changePct: number; price: number; quoteVolume?: number };
 type Pump = { symbol: string; price: number; changePct: number };
+type SignalFilter = "ALL" | "BUY" | "SELL";
 
 const fmt = (v: number | null | undefined) =>
   v == null || Number.isNaN(v) ? "—" : v.toLocaleString("en-US", { maximumFractionDigits: 6 });
@@ -30,6 +31,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [source, setSource] = useState("");
   const [showHelp, setShowHelp] = useState(false);
+  const [signalFilter, setSignalFilter] = useState<SignalFilter>("ALL");
 
   const load = useCallback(async () => {
     try {
@@ -58,7 +60,19 @@ export default function Home() {
   useEffect(() => { load(); const t = setInterval(load, 90000); return () => clearInterval(t); }, [load]);
 
   const risks = items.filter((o) => ["AVOID", "HIGH_RISK"].includes(o.category || o.action));
-  const buys = items.filter((o) => ["STRONG_BUY", "BUY_CANDIDATE", "BUY"].includes(o.category || o.action));
+  const buySignals = items.filter((o) => {
+    const cat = o.category || o.action;
+    return ["STRONG_BUY", "BUY_CANDIDATE", "BUY"].includes(cat) || o.direction === "BUY";
+  });
+  const sellSignals = items.filter((o) => {
+    const cat = o.category || o.action;
+    return ["AVOID", "HIGH_RISK"].includes(cat) || o.direction === "SELL";
+  });
+
+  const displayed =
+    signalFilter === "BUY" ? buySignals
+    : signalFilter === "SELL" ? sellSignals
+    : items;
 
   return (
     <main dir="rtl"><div className="shell">
@@ -80,36 +94,64 @@ export default function Home() {
         <section className="help-box">
           <h2>📖 راهنمای استفاده از داشبورد</h2>
           <ol>
-            <li><b>ارزهای اصلی:</b> قیمت لحظه‌ای BTC، ETH، SOL و بقیهٔ بزرگ‌های بازار را ببینید.</li>
-            <li><b>نمای کلی بازار:</b> بیشترین رشد، بیشترین افت و پایش پامپ (رشد غیرعادی ≥۳٪).</li>
-            <li><b>فرصت‌های رتبه‌بندی‌شده:</b> مهم‌ترین بخش — سیستم چند استراتژی را ترکیب می‌کند و بهترین نامزدها را با امتیاز، ورود، حد ضرر و TP نشان می‌دهد.</li>
-            <li><b>دلایل:</b> زیر هر کارت ببینید چرا این فرصت پیشنهاد شده (اندیکاتور، رژیم، پورصمدی و غیره).</li>
-            <li><b>هشدار ریسک:</b> کوین‌هایی که بهتر است فعلاً از آن‌ها دوری کنید.</li>
-            <li><b>بروزرسانی:</b> داده هر ۹۰ ثانیه تازه می‌شود؛ یا دکمه «بروزرسانی» را بزنید.</li>
+            <li><b>ارزهای اصلی:</b> قیمت لحظه‌ای BTC، ETH، SOL و بقیهٔ بزرگ‌های بازار.</li>
+            <li><b>نمای کلی بازار:</b> بیشترین رشد، افت و پایش پامپ (رشد ≥۳٪).</li>
+            <li><b>فرصت‌ها:</b> ترکیب چند استراتژی با امتیاز، ورود، حد ضرر و TP.</li>
+            <li><b>دکمه سیگنال:</b> فیلتر سریع فقط خرید یا فقط فروش/اجتناب.</li>
+            <li><b>بروزرسانی:</b> هر ۹۰ ثانیه خودکار؛ یا دستی با دکمه.</li>
           </ol>
+
+          <h3>📊 معنی امتیاز (Score / 100)</h3>
+          <ul>
+            <li><b>۸۰–۱۰۰:</b> فرصت قوی — چند لایه تحلیل هم‌جهت‌اند (فنی + استراتژی + نقدشوندگی).</li>
+            <li><b>۶۵–۷۹:</b> نامزد خوب — قابل بررسی، ولی همه معیارها کامل نیست.</li>
+            <li><b>۵۰–۶۴:</b> متوسط — بهتر است منتظر تأیید بیشتر بمانید.</li>
+            <li><b>زیر ۵۰:</b> ضعیف یا پرریسک — معمولاً در دسته انتظار / اجتناب.</li>
+          </ul>
+
+          <h3>🎯 معنی اعتماد (Confidence %)</h3>
+          <ul>
+            <li>نشان می‌دهد استراتژی‌ها چقدر روی جهت توافق دارند.</li>
+            <li>بالای ۷۰٪ = اجماع نسبتاً قوی · زیر ۵۰٪ = اختلاف رأی زیاد.</li>
+          </ul>
+
+          <h3>📐 نسبت ریسک به ریوارد (R/R)</h3>
+          <ul>
+            <li><b>۱:۲ یا بهتر:</b> مطلوب‌تر (سود هدف حدود ۲ برابر ریسک).</li>
+            <li>اگر R/R ضعیف است، حتی با امتیاز بالا احتیاط کنید.</li>
+          </ul>
+
+          <h3>🏷️ برچسب‌ها</h3>
           <div className="help-labels">
-            <span>🔥 خرید قوی</span><span>🟢 نامزد خرید</span><span>🟡 انتظار</span>
-            <span>🚀 پایش پامپ</span><span>⚠️ ریسک بالا</span><span>🔴 اجتناب</span>
+            <span>🔥 خرید قوی (امتیاز بالا + جهت خرید)</span>
+            <span>🟢 نامزد خرید</span>
+            <span>🟡 انتظار</span>
+            <span>🚀 پایش پامپ (≠ خرید)</span>
+            <span>⚠️ ریسک بالا</span>
+            <span>🔴 اجتناب / فروش محتمل</span>
           </div>
+
+          <h3>چطور از سیگنال استفاده کنم؟</h3>
+          <ul>
+            <li>دکمه <b>سیگنال خرید</b> را بزنید تا فقط نامزدهای خرید ببینید.</li>
+            <li>دکمه <b>سیگنال فروش</b> کوین‌های اجتناب/فشار فروش را نشان می‌دهد.</li>
+            <li>ورود · حد ضرر · TP1/TP2 را یادداشت کنید.</li>
+            <li>حجم و اسپرد را خودتان روی صرافی چک کنید.</li>
+            <li>پامپ‌واچ فقط پایش است — سیگنال خرید نیست.</li>
+          </ul>
+
           <p className="help-warn">
             ⚠️ این ابزار <b>توصیه مالی نیست</b> و سود را تضمین نمی‌کند.
             معامله خودکار خاموش است — تصمیم نهایی و مدیریت ریسک با شماست.
-            قبل از هر معامله، خودتان تحلیل و حجم را بررسی کنید.
           </p>
-          <h3>چطور از یک فرصت استفاده کنم؟</h3>
-          <ul>
-            <li>فقط روی فرصت‌های <b>خرید قوی</b> یا <b>نامزد خرید</b> تمرکز کنید.</li>
-            <li>قیمت ورود، حد ضرر (SL) و اهداف (TP1/TP2) را یادداشت کنید.</li>
-            <li>نسبت ریسک به ریوارد (R/R) را چک کنید؛ ترجیحاً حداقل ۱:۲.</li>
-            <li>اگر هشدار نقدشوندگی یا اسپرد دیدید، احتیاط بیشتری کنید.</li>
-            <li>پامپ‌واچ فقط برای پایش است — سیگنال خرید نیست.</li>
-          </ul>
         </section>
       )}
 
       <div className="meta">
         <span>آخرین بروزرسانی: {updated ? new Date(updated).toLocaleString("fa-IR") : "—"}</span>
-        <button type="button" onClick={() => { setLoading(true); load(); }}>بروزرسانی</button>
+        <div className="meta-btns">
+          <button type="button" onClick={() => { setLoading(true); load(); }}>بروزرسانی</button>
+        </div>
       </div>
       {message && !live && <div className="info">ℹ️ {message}</div>}
 
@@ -148,7 +190,7 @@ export default function Home() {
         </div>
       </section>
 
-      {risks.length > 0 && (
+      {risks.length > 0 && signalFilter === "ALL" && (
         <section className="section">
           <h2 className="section-title">⚠️ هشدار ریسک / اجتناب</h2>
           <div className="risk-row">{risks.slice(0,6).map(o => (
@@ -158,33 +200,70 @@ export default function Home() {
       )}
 
       <section className="section">
-        <h2 className="section-title">🔥 فرصت‌های رتبه‌بندی‌شده{buys.length ? ` (${buys.length} نامزد خرید)` : ""}</h2>
+        <div className="section-head">
+          <h2 className="section-title" style={{margin:0}}>
+            {signalFilter === "BUY" ? "🟢 سیگنال‌های خرید"
+              : signalFilter === "SELL" ? "🔴 سیگنال‌های فروش / اجتناب"
+              : "🔥 فرصت‌های رتبه‌بندی‌شده"}
+            {signalFilter === "ALL" && buySignals.length ? ` (${buySignals.length} نامزد خرید)` : ""}
+            {signalFilter === "BUY" ? ` (${buySignals.length})` : ""}
+            {signalFilter === "SELL" ? ` (${sellSignals.length})` : ""}
+          </h2>
+          <div className="signal-btns">
+            <button
+              type="button"
+              className={signalFilter === "ALL" ? "sig active" : "sig"}
+              onClick={() => setSignalFilter("ALL")}
+            >همه</button>
+            <button
+              type="button"
+              className={signalFilter === "BUY" ? "sig buy active" : "sig buy"}
+              onClick={() => setSignalFilter("BUY")}
+            >🟢 سیگنال خرید ({buySignals.length})</button>
+            <button
+              type="button"
+              className={signalFilter === "SELL" ? "sig sell active" : "sig sell"}
+              onClick={() => setSignalFilter("SELL")}
+            >🔴 سیگنال فروش ({sellSignals.length})</button>
+          </div>
+        </div>
+
         {loading ? <div className="empty">در حال اسکن بازار و رتبه‌بندی فرصت‌ها...</div>
-        : items.length === 0 ? <div className="empty"><strong>🟡 فعلاً فرصت با کیفیت مناسب پیدا نشد.</strong><span>منتظر شرایط بهتر بمانید.</span></div>
-        : <div className="grid">{items.map((o,i) => {
-          const cat = o.category || o.action;
-          return (
-            <article className={`card cat-${cat}`} key={`${o.symbol}-${i}`}>
-              <div className="top"><div><span className="rank">#{i+1}</span><h2>{o.symbol}</h2></div>
-                <div className="score">{o.score}<small>/100</small></div></div>
-              <div className="buy">{catLabel[cat]||cat}</div>
-              <div className="stats">
-                <div><b>اعتماد</b><strong>{o.confidence}%</strong></div>
-                <div><b>قیمت</b><strong>{fmt(o.price??o.entry)}</strong></div>
-                <div><b>۲۴س</b><strong className={(o.changePct||0)>=0?"up":"down"}>{o.changePct!=null?`${o.changePct>=0?"+":""}${o.changePct.toFixed(1)}%`:"—"}</strong></div>
-                <div><b>ورود</b><strong>{fmt(o.entry)}</strong></div>
-                <div><b>حد ضرر</b><strong>{fmt(o.stopLoss)}</strong></div>
-                <div><b>TP1</b><strong>{fmt(o.tp1)}</strong></div>
-                <div><b>TP2</b><strong>{fmt(o.tp2)}</strong></div>
-                <div><b>R/R</b><strong>{o.riskReward==null?"—":`1:${o.riskReward.toFixed(1)}`}</strong></div>
-                <div><b>نقدشوندگی</b><strong>{o.liquidity??"—"}</strong></div>
-              </div>
-              <div className="why"><h3>دلایل</h3><ul>{(o.reasons||[]).map((r,j)=><li key={j}>✓ {r}</li>)}</ul></div>
-              {(o.warnings||[]).length>0 && <div className="warn-list">{o.warnings!.map((w,j)=><div key={j}>⚠️ {w}</div>)}</div>}
-              <div className="warning">⚠️ توصیه مالی نیست. تصمیم نهایی با شماست. معامله خودکار خاموش است.</div>
-            </article>
-          );
-        })}</div>}
+        : displayed.length === 0 ? (
+          <div className="empty">
+            <strong>
+              {signalFilter === "BUY" ? "فعلاً سیگنال خرید معتبری نیست."
+                : signalFilter === "SELL" ? "فعلاً سیگنال فروش/اجتناب نیست."
+                : "🟡 فعلاً فرصت با کیفیت مناسب پیدا نشد."}
+            </strong>
+            <span>منتظر شرایط بهتر بمانید یا دکمه بروزرسانی را بزنید.</span>
+          </div>
+        ) : (
+          <div className="grid">{displayed.map((o,i) => {
+            const cat = o.category || o.action;
+            return (
+              <article className={`card cat-${cat}`} key={`${o.symbol}-${i}`}>
+                <div className="top"><div><span className="rank">#{i+1}</span><h2>{o.symbol}</h2></div>
+                  <div className="score">{o.score}<small>/100</small></div></div>
+                <div className="buy">{catLabel[cat]||cat}</div>
+                <div className="stats">
+                  <div><b>اعتماد</b><strong>{o.confidence}%</strong></div>
+                  <div><b>قیمت</b><strong>{fmt(o.price??o.entry)}</strong></div>
+                  <div><b>۲۴س</b><strong className={(o.changePct||0)>=0?"up":"down"}>{o.changePct!=null?`${o.changePct>=0?"+":""}${o.changePct.toFixed(1)}%`:"—"}</strong></div>
+                  <div><b>ورود</b><strong>{fmt(o.entry)}</strong></div>
+                  <div><b>حد ضرر</b><strong>{fmt(o.stopLoss)}</strong></div>
+                  <div><b>TP1</b><strong>{fmt(o.tp1)}</strong></div>
+                  <div><b>TP2</b><strong>{fmt(o.tp2)}</strong></div>
+                  <div><b>R/R</b><strong>{o.riskReward==null?"—":`1:${o.riskReward.toFixed(1)}`}</strong></div>
+                  <div><b>نقدشوندگی</b><strong>{o.liquidity??"—"}</strong></div>
+                </div>
+                <div className="why"><h3>دلایل</h3><ul>{(o.reasons||[]).map((r,j)=><li key={j}>✓ {r}</li>)}</ul></div>
+                {(o.warnings||[]).length>0 && <div className="warn-list">{o.warnings!.map((w,j)=><div key={j}>⚠️ {w}</div>)}</div>}
+                <div className="warning">⚠️ توصیه مالی نیست. تصمیم نهایی با شماست. معامله خودکار خاموش است.</div>
+              </article>
+            );
+          })}</div>
+        )}
       </section>
       <footer><p>منبع داده: OKX عمومی · AUTO_TRADING = OFF · هیچ سودی تضمین نمی‌شود</p></footer>
     </div>
@@ -206,10 +285,17 @@ export default function Home() {
       .help-labels span{background:#101f31;border:1px solid #1b3047;border-radius:8px;padding:6px 10px;font-size:12px}
       .help-warn{background:#211d17;color:#f0c674;border-radius:10px;padding:12px;font-size:13px;margin:12px 0 0}
       .meta{display:flex;justify-content:space-between;align-items:center;margin:22px 0 12px;color:#91a4ba;font-size:13px}
+      .meta-btns{display:flex;gap:8px}
       .meta button{background:#153453;border:1px solid #29415d;color:#dbeafe;border-radius:10px;padding:9px 14px;cursor:pointer}
       .info,.empty{border:1px solid #29415d;background:#0b1828;border-radius:16px;padding:18px;margin-top:12px}
       .empty{text-align:center;display:flex;flex-direction:column;gap:8px;color:#aebfd2}
       .section{margin-top:28px}.section-title{font-size:18px;margin:0 0 14px;color:#cfe3ff}
+      .section-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+      .signal-btns{display:flex;flex-wrap:wrap;gap:8px}
+      .sig{background:#101f31;border:1px solid #29415d;color:#aebfd2;border-radius:10px;padding:9px 14px;cursor:pointer;font-size:13px}
+      .sig.active{border-color:#78b7ff;color:#e8eef7;background:#153453}
+      .sig.buy.active{border-color:#2f6b4f;background:#0f2a1c;color:#63e6a7}
+      .sig.sell.active{border-color:#5a3040;background:#211820;color:#ff8f8f}
       .majors-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
       .major-chip{background:#0b1828;border:1px solid #1b3047;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
       .major-chip b{font-size:14px;color:#cfe3ff}.major-chip .price{font-size:13px;color:#aebfd2}
@@ -240,7 +326,7 @@ export default function Home() {
       .warn-list{margin-top:10px;color:#f0c674;font-size:12px;display:grid;gap:4px}
       .warning{margin-top:14px;background:#211d17;color:#f0c674;border-radius:10px;padding:10px;font-size:11px}
       footer{margin-top:40px;text-align:center;color:#6b7c90;font-size:12px}
-      @media(max-width:650px){h1{font-size:22px}.shell{padding:18px 12px 40px}.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}header{flex-direction:column}.majors-grid{grid-template-columns:repeat(2,1fr)}}
+      @media(max-width:650px){h1{font-size:22px}.shell{padding:18px 12px 40px}.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}header{flex-direction:column}.majors-grid{grid-template-columns:repeat(2,1fr)}.section-head{flex-direction:column;align-items:flex-start}}
     `}</style></main>
   );
 }

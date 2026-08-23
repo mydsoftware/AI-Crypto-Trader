@@ -187,7 +187,7 @@ class OpportunityEngine:
                 if opp and opp.final_score >= self.min_score:
                     results.append(opp)
             except Exception as exc:
-                logger.warning("تحلیل %s ناموفق: %s", snap.symbol, exp if False else exc)
+                logger.warning("تحلیل %s ناموفق: %s", snap.symbol, exc)
 
         priority = {
             "STRONG_BUY": 5, "BUY_CANDIDATE": 4, "PUMP_WATCH": 3,

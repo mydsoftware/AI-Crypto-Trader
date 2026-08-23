@@ -16,7 +16,8 @@ const fmt = (v: number | null | undefined) =>
 
 const catLabel: Record<string, string> = {
   STRONG_BUY: "🔥 خرید قوی", BUY_CANDIDATE: "🟢 نامزد خرید", BUY: "🟢 خرید",
-  PUMP_WATCH: "🚀 پایش پامپ", WAIT: "🟡 انتظار", AVOID: "🔴 اجتناب", HIGH_RISK: "⚠️ ریسک بالا",
+  STRONG_SELL: "🔻 فروش قوی", SELL_CANDIDATE: "🔴 نامزد فروش", SELL: "🔴 فروش",
+  PUMP_WATCH: "🚀 پایش پامپ", WAIT: "🟡 انتظار", AVOID: "⛔ اجتناب", HIGH_RISK: "⚠️ ریسک بالا",
 };
 
 export default function Home() {
@@ -59,14 +60,14 @@ export default function Home() {
 
   useEffect(() => { load(); const t = setInterval(load, 90000); return () => clearInterval(t); }, [load]);
 
-  const risks = items.filter((o) => ["AVOID", "HIGH_RISK"].includes(o.category || o.action));
+  const risks = items.filter((o) => ["STRONG_SELL", "SELL_CANDIDATE", "AVOID", "HIGH_RISK"].includes(o.category || o.action));
   const buySignals = items.filter((o) => {
     const cat = o.category || o.action;
     return ["STRONG_BUY", "BUY_CANDIDATE", "BUY"].includes(cat) || o.direction === "BUY";
   });
   const sellSignals = items.filter((o) => {
     const cat = o.category || o.action;
-    return ["AVOID", "HIGH_RISK"].includes(cat) || o.direction === "SELL";
+    return ["STRONG_SELL", "SELL_CANDIDATE", "SELL", "AVOID", "HIGH_RISK"].includes(cat) || o.direction === "SELL";
   });
 
   const displayed =
@@ -97,52 +98,54 @@ export default function Home() {
             <li><b>ارزهای اصلی:</b> قیمت لحظه‌ای BTC، ETH، SOL و بقیهٔ بزرگ‌های بازار.</li>
             <li><b>نمای کلی بازار:</b> بیشترین رشد، افت و پایش پامپ (رشد ≥۳٪).</li>
             <li><b>فرصت‌ها:</b> ترکیب چند استراتژی با امتیاز، ورود، حد ضرر و TP.</li>
-            <li><b>دکمه سیگنال:</b> فیلتر سریع فقط خرید یا فقط فروش/اجتناب.</li>
+            <li><b>دکمه سیگنال:</b> فیلتر سریع فقط خرید یا فقط فروش.</li>
             <li><b>بروزرسانی:</b> هر ۹۰ ثانیه خودکار؛ یا دستی با دکمه.</li>
           </ol>
 
           <h3>📊 معنی امتیاز (Score / 100)</h3>
           <ul>
-            <li><b>۸۰–۱۰۰:</b> فرصت قوی — چند لایه تحلیل هم‌جهت‌اند (فنی + استراتژی + نقدشوندگی).</li>
-            <li><b>۶۵–۷۹:</b> نامزد خوب — قابل بررسی، ولی همه معیارها کامل نیست.</li>
-            <li><b>۵۰–۶۴:</b> متوسط — بهتر است منتظر تأیید بیشتر بمانید.</li>
-            <li><b>زیر ۵۰:</b> ضعیف یا پرریسک — معمولاً در دسته انتظار / اجتناب.</li>
+            <li><b>۸۰–۱۰۰:</b> سیگنال قوی در همان جهت — اگر جهت خرید باشد خرید قوی؛ اگر جهت فروش باشد فشار فروش قوی (نه خرید!).</li>
+            <li><b>۶۵–۷۹:</b> نامزد خوب در همان جهت.</li>
+            <li><b>۵۰–۶۴:</b> متوسط — منتظر تأیید بیشتر.</li>
+            <li><b>زیر ۵۰:</b> ضعیف یا پرریسک → اجتناب.</li>
           </ul>
+          <p style={{color:"#f0c674",fontSize:13}}>نکته مهم: امتیاز اندازه‌گیری قدرت سیگنال است، نه فقط قدرت خرید. امتیاز ۱۰۰ + برچسب فروش = اجماع نزولی قوی.</p>
 
           <h3>🎯 معنی اعتماد (Confidence %)</h3>
           <ul>
-            <li>نشان می‌دهد استراتژی‌ها چقدر روی جهت توافق دارند.</li>
+            <li>میزان توافق استراتژی‌ها روی جهت.</li>
             <li>بالای ۷۰٪ = اجماع نسبتاً قوی · زیر ۵۰٪ = اختلاف رأی زیاد.</li>
           </ul>
 
           <h3>📐 نسبت ریسک به ریوارد (R/R)</h3>
           <ul>
-            <li><b>۱:۲ یا بهتر:</b> مطلوب‌تر (سود هدف حدود ۲ برابر ریسک).</li>
+            <li><b>۱:۲ یا بهتر:</b> مطلوب‌تر.</li>
             <li>اگر R/R ضعیف است، حتی با امتیاز بالا احتیاط کنید.</li>
           </ul>
 
           <h3>🏷️ برچسب‌ها</h3>
           <div className="help-labels">
-            <span>🔥 خرید قوی (امتیاز بالا + جهت خرید)</span>
+            <span>🔥 خرید قوی</span>
             <span>🟢 نامزد خرید</span>
+            <span>🔻 فروش قوی</span>
+            <span>🔴 نامزد فروش</span>
             <span>🟡 انتظار</span>
             <span>🚀 پایش پامپ (≠ خرید)</span>
             <span>⚠️ ریسک بالا</span>
-            <span>🔴 اجتناب / فروش محتمل</span>
+            <span>⛔ اجتناب (کیفیت پایین)</span>
           </div>
 
           <h3>چطور از سیگنال استفاده کنم؟</h3>
           <ul>
-            <li>دکمه <b>سیگنال خرید</b> را بزنید تا فقط نامزدهای خرید ببینید.</li>
-            <li>دکمه <b>سیگنال فروش</b> کوین‌های اجتناب/فشار فروش را نشان می‌دهد.</li>
-            <li>ورود · حد ضرر · TP1/TP2 را یادداشت کنید.</li>
-            <li>حجم و اسپرد را خودتان روی صرافی چک کنید.</li>
+            <li>دکمه <b>سیگنال خرید</b> → فقط نامزدهای خرید.</li>
+            <li>دکمه <b>سیگنال فروش</b> → فشار فروش / اجتناب.</li>
+            <li>ورود · حد ضرر · TP را یادداشت کنید.</li>
             <li>پامپ‌واچ فقط پایش است — سیگنال خرید نیست.</li>
           </ul>
 
           <p className="help-warn">
             ⚠️ این ابزار <b>توصیه مالی نیست</b> و سود را تضمین نمی‌کند.
-            معامله خودکار خاموش است — تصمیم نهایی و مدیریت ریسک با شماست.
+            معامله خودکار خاموش است — تصمیم نهایی با شماست.
           </p>
         </section>
       )}
@@ -192,8 +195,8 @@ export default function Home() {
 
       {risks.length > 0 && signalFilter === "ALL" && (
         <section className="section">
-          <h2 className="section-title">⚠️ هشدار ریسک / اجتناب</h2>
-          <div className="risk-row">{risks.slice(0,6).map(o => (
+          <h2 className="section-title">⚠️ هشدار ریسک / فروش</h2>
+          <div className="risk-row">{risks.slice(0,8).map(o => (
             <div className="risk-chip" key={o.symbol}><b>{o.symbol}</b><span>{catLabel[o.category||o.action]||o.action}</span></div>
           ))}</div>
         </section>
@@ -203,28 +206,16 @@ export default function Home() {
         <div className="section-head">
           <h2 className="section-title" style={{margin:0}}>
             {signalFilter === "BUY" ? "🟢 سیگنال‌های خرید"
-              : signalFilter === "SELL" ? "🔴 سیگنال‌های فروش / اجتناب"
+              : signalFilter === "SELL" ? "🔴 سیگنال‌های فروش"
               : "🔥 فرصت‌های رتبه‌بندی‌شده"}
             {signalFilter === "ALL" && buySignals.length ? ` (${buySignals.length} نامزد خرید)` : ""}
             {signalFilter === "BUY" ? ` (${buySignals.length})` : ""}
             {signalFilter === "SELL" ? ` (${sellSignals.length})` : ""}
           </h2>
           <div className="signal-btns">
-            <button
-              type="button"
-              className={signalFilter === "ALL" ? "sig active" : "sig"}
-              onClick={() => setSignalFilter("ALL")}
-            >همه</button>
-            <button
-              type="button"
-              className={signalFilter === "BUY" ? "sig buy active" : "sig buy"}
-              onClick={() => setSignalFilter("BUY")}
-            >🟢 سیگنال خرید ({buySignals.length})</button>
-            <button
-              type="button"
-              className={signalFilter === "SELL" ? "sig sell active" : "sig sell"}
-              onClick={() => setSignalFilter("SELL")}
-            >🔴 سیگنال فروش ({sellSignals.length})</button>
+            <button type="button" className={signalFilter === "ALL" ? "sig active" : "sig"} onClick={() => setSignalFilter("ALL")}>همه</button>
+            <button type="button" className={signalFilter === "BUY" ? "sig buy active" : "sig buy"} onClick={() => setSignalFilter("BUY")}>🟢 سیگنال خرید ({buySignals.length})</button>
+            <button type="button" className={signalFilter === "SELL" ? "sig sell active" : "sig sell"} onClick={() => setSignalFilter("SELL")}>🔴 سیگنال فروش ({sellSignals.length})</button>
           </div>
         </div>
 
@@ -233,7 +224,7 @@ export default function Home() {
           <div className="empty">
             <strong>
               {signalFilter === "BUY" ? "فعلاً سیگنال خرید معتبری نیست."
-                : signalFilter === "SELL" ? "فعلاً سیگنال فروش/اجتناب نیست."
+                : signalFilter === "SELL" ? "فعلاً سیگنال فروش نیست."
                 : "🟡 فعلاً فرصت با کیفیت مناسب پیدا نشد."}
             </strong>
             <span>منتظر شرایط بهتر بمانید یا دکمه بروزرسانی را بزنید.</span>
@@ -313,7 +304,7 @@ export default function Home() {
       .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
       .card{background:#0b1828;border:1px solid #1b3047;border-radius:18px;padding:18px;box-shadow:0 10px 28px #0003}
       .card.cat-STRONG_BUY{border-color:#2f6b4f}.card.cat-BUY_CANDIDATE,.card.cat-BUY{border-color:#2a5a40}
-      .card.cat-PUMP_WATCH{border-color:#6b5a20}.card.cat-AVOID,.card.cat-HIGH_RISK{border-color:#5a3040;opacity:.92}
+      .card.cat-PUMP_WATCH{border-color:#6b5a20}.card.cat-STRONG_SELL,.card.cat-SELL_CANDIDATE,.card.cat-SELL{border-color:#8b3a4a}.card.cat-AVOID,.card.cat-HIGH_RISK{border-color:#5a3040;opacity:.92}
       .top{display:flex;justify-content:space-between;align-items:center}
       .top h2{display:inline;margin:0 0 0 8px;font-size:20px}.rank{color:#78b7ff;font-weight:bold}
       .score{font-size:28px;font-weight:bold;color:#63e6a7}.score small{font-size:12px;color:#91a4ba}

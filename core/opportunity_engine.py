@@ -1,15 +1,7 @@
 """
 موتور نهایی فرصت‌ها.
 
-ترکیب:
-  DataEngine (زنده)
-  + Technical Evidence
-  + Strategy Votes
-  + Multi-Timeframe
-  + Cost Model
-  + Ranking
-
-خروجی استاندارد برای Dashboard و API.
+ترکیب: DataEngine + Technical + Strategy Votes + Poursamadi + Regime + Cost + Ranking
 AUTO_TRADING خاموش است — فقط تحلیل.
 """
 from __future__ import annotations
@@ -20,11 +12,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 from core.data_engine import DataEngine, MarketSnapshot
-from core.technical import (
-    atr,
-    generate_technical_evidence,
-    technical_score,
-)
+from core.technical import atr, generate_technical_evidence, technical_score
+from core.regime import detect_regime
+from poursamadi import PoursamadiEngine
 from scanner.cost_model import CostModel
 from scanner.ensemble_engine import EnsembleEngine, StrategyVote, TradePlan
 from scanner.ranking import rank as rank_opportunity
@@ -74,6 +64,7 @@ class OpportunityEngine:
         self.min_score = min_score
         self.ensemble = EnsembleEngine()
         self.cost = CostModel()
+        self.poursamadi = PoursamadiEngine()
 
     def _analyze_symbol(self, snap: MarketSnapshot) -> FinalOpportunity | None:
         candles = self.data.fetch_ohlcv(snap.symbol, "1h", 120)
@@ -89,6 +80,12 @@ class OpportunityEngine:
             for c in candles
         ]
         votes = generate_votes(scanner_candles)
+
+        ps = self.poursamadi.analyze(candles)
+        for v in ps.votes:
+            votes.append(v)
+
+        regime = detect_regime(candles)
 
         atr_val = atr(candles)
         plan: TradePlan = self.ensemble.build_plan(
@@ -122,7 +119,11 @@ class OpportunityEngine:
         for e in evidences:
             if e.direction in ("BUY", "SELL") and e.score >= 70:
                 reasons.append(f"{e.name}: {e.reason}")
-        reasons = reasons[:8]
+        for name, s in ps.summary.items():
+            if not s.startswith("NEUTRAL"):
+                reasons.append(f"پورصمدی {name}: {s}")
+        reasons.append(f"رژیم: {regime.primary}/{regime.structure}/{regime.volatility}")
+        reasons = reasons[:10]
 
         warnings = list(opp_score.warnings)
         if snap.spread_pct and snap.spread_pct > 0.3:
@@ -178,10 +179,7 @@ class OpportunityEngine:
             min_quote_volume=self.min_quote_volume,
             max_symbols=self.max_symbols,
         )
-        snapshots = [
-            s for s in snapshots
-            if s.symbol.split("/")[0] not in STABLES
-        ]
+        snapshots = [s for s in snapshots if s.symbol.split("/")[0] not in STABLES]
         results: list[FinalOpportunity] = []
         for snap in snapshots:
             try:
@@ -189,20 +187,13 @@ class OpportunityEngine:
                 if opp and opp.final_score >= self.min_score:
                     results.append(opp)
             except Exception as exc:
-                logger.warning("تحلیل %s ناموفق: %s", snap.symbol, exc)
+                logger.warning("تحلیل %s ناموفق: %s", snap.symbol, exp if False else exc)
 
         priority = {
-            "STRONG_BUY": 5,
-            "BUY_CANDIDATE": 4,
-            "PUMP_WATCH": 3,
-            "WAIT": 2,
-            "HIGH_RISK": 1,
-            "AVOID": 0,
+            "STRONG_BUY": 5, "BUY_CANDIDATE": 4, "PUMP_WATCH": 3,
+            "WAIT": 2, "HIGH_RISK": 1, "AVOID": 0,
         }
-        results.sort(
-            key=lambda x: (priority.get(x.category, 0), x.final_score),
-            reverse=True,
-        )
+        results.sort(key=lambda x: (priority.get(x.category, 0), x.final_score), reverse=True)
         for i, r in enumerate(results, 1):
             r.rank = i
         logger.info("اسکن تمام شد: %d فرصت", len(results))
@@ -237,4 +228,5 @@ class OpportunityEngine:
             "live": True,
             "message": f"{len(items)} فرصت از اسکن زنده بازار",
             "count": len(items),
+            "autoTrading": False,
         }

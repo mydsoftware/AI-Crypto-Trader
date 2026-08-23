@@ -277,16 +277,23 @@ export function analyzeSymbol(ticker: Ticker, candles: Candle[]): Opportunity | 
     rr = 2;
   }
 
+  // امتیاز بالا روی فروش = فشار فروش قوی، نه خرید
   let category = "WAIT";
-  if (ticker.changePct >= 8 && liq >= 40) {
+  if (ticker.changePct >= 8 && liq >= 40 && direction !== "SELL") {
     category = "PUMP_WATCH";
     reasons.push("شتاب غیرعادی قیمت؛ فقط پایش — سیگنال خرید قطعی نیست.");
     if (liq < 60) warnings.push("ریسک نوسان و نقدشوندگی بالا.");
+  } else if (direction === "SELL" && score >= 75) {
+    category = "STRONG_SELL";
+    reasons.push("اجماع نزولی قوی — امتیاز بالا یعنی فشار فروش، نه سیگنال خرید.");
+  } else if (direction === "SELL" && score >= 55) {
+    category = "SELL_CANDIDATE";
+    reasons.push("تمایل نزولی — از ورود خرید خودداری کنید.");
   } else if (score >= 75 && direction === "BUY" && liq >= 50) {
     category = "STRONG_BUY";
   } else if (score >= 60 && direction === "BUY") {
     category = "BUY_CANDIDATE";
-  } else if (direction === "SELL" || score < 40) {
+  } else if (score < 40) {
     category = "AVOID";
   } else if (liq < 40) {
     category = "HIGH_RISK";
@@ -299,6 +306,8 @@ export function analyzeSymbol(ticker: Ticker, candles: Candle[]): Opportunity | 
   const action =
     category === "STRONG_BUY" || category === "BUY_CANDIDATE"
       ? "BUY"
+      : category === "STRONG_SELL" || category === "SELL_CANDIDATE"
+      ? "SELL"
       : category;
 
   const confidence = Math.round(

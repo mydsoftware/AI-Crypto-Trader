@@ -85,9 +85,9 @@ export default function Home() {
             {losers.length===0 && <li className="muted">—</li>}</ul>
           </div>
           <div className="ov-card"><h3>🚀 Pump Watch</h3>
-            <ul>{pumps.slice(0,5).map(p => <li key={p.symbol}><span>{p.symbol}</span><strong className="up">+{p.changePct.toFixed(1)}%</strong></li>)}
+            <ul>{pumps.slice(0,10).map(p => <li key={p.symbol}><span>{p.symbol}</span><strong className="up">+{p.changePct.toFixed(1)}%</strong></li>)}
             {pumps.length===0 && <li className="muted">مورد غیرعادی یافت نشد</li>}</ul>
-            <p className="note">Pump ≠ BUY — فقط پایش با ریسک بالا</p>
+            <p className="note">Pump ≠ BUY — فقط پایش با ریسک بالا · رشد ≥۳٪</p>
           </div>
         </div>
       </section>

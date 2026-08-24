@@ -10,41 +10,25 @@ const MAX_MARKETS=8;
 const CACHE_MS=20_000;
 let tickerCache:{at:number;data:Ticker[]}|null=null;
 let tickerPromise:Promise<Ticker[]>|null=null;
-
 function normalizeSymbol(v:string){return v.replace(/[-_]/g,"/").toUpperCase();}
 function toTabdealSymbol(symbol:string){return symbol.replace("/","_").toUpperCase();}
-async function tabdeal(path:string,timeoutMs=7000){
- const c=new AbortController();const timer=setTimeout(()=>c.abort(),timeoutMs);
- try{const res=await fetch(`${BASE}${path}`,{cache:"no-store",headers:{"User-Agent":"AI-Crypto-Trader/1.0"},signal:c.signal});if(!res.ok)throw new Error(`Tabdeal HTTP ${res.status}: ${path}`);return res.json();}
- finally{clearTimeout(timer)}
-}
+async function tabdeal(path:string,timeoutMs=7000){const c=new AbortController();const timer=setTimeout(()=>c.abort(),timeoutMs);try{const res=await fetch(`${BASE}${path}`,{cache:"no-store",headers:{"User-Agent":"AI-Crypto-Trader/1.0"},signal:c.signal});if(!res.ok)throw new Error(`Tabdeal HTTP ${res.status}: ${path}`);return res.json();}finally{clearTimeout(timer)}}
 function numberOf(v:any){const n=Number(v);return Number.isFinite(n)?n:0;}
-function rowsFrom(json:any):any[]{if(Array.isArray(json))return json;if(Array.isArray(json?.data))return json.data;if(Array.isArray(json?.result))return json.result;if(Array.isArray(json?.results))return json.results;return [];}
+function rowsFrom(json:any):any[]{if(Array.isArray(json))return json;if(Array.isArray(json?.data))return json.data;if(Array.isArray(json?.result))return json.result;if(Array.isArray(json?.results))return json.results;return []}
 async function exchangeInfo(){return rowsFrom(await tabdeal("/r/api/v1/exchangeInfo"));}
 async function trades(symbol:string,limit=1000){return rowsFrom(await tabdeal(`/r/api/v1/trades?symbol=${encodeURIComponent(toTabdealSymbol(symbol))}&limit=${Math.min(limit,1000)}`));}
 async function depth(symbol:string,limit=5){return tabdeal(`/r/api/v1/depth?symbol=${encodeURIComponent(toTabdealSymbol(symbol))}&limit=${limit}`);}
 async function mapLimit<T,R>(items:T[],limit:number,fn:(item:T)=>Promise<R>):Promise<R[]>{const out:R[]=[];let index=0;async function worker(){while(true){const i=index++;if(i>=items.length)return;try{out[i]=await fn(items[i]);}catch{out[i]=undefined as R;}}}await Promise.all(Array.from({length:Math.min(limit,items.length)},()=>worker()));return out;}
-
 async function loadTickers():Promise<Ticker[]>{
- const markets=(await exchangeInfo()).filter((m:any)=>String(m.status||"TRADING").toUpperCase()==="TRADING").map((m:any)=>normalizeSymbol(String(m.symbol||m.tabdealSymbol||""))).filter((s:string)=>s.endsWith("/IRT")&&!STABLES.has(s.split("/")[0]));
+ const markets=(await exchangeInfo()).filter((m:any)=>String(m.status||"TRADING").toUpperCase()==="TRADING").map((m:any)=>{
+   const raw=String(m.tabdealSymbol||m.symbol||"").toUpperCase();
+   const quote=String(m.quoteAsset||"").toUpperCase();
+   const normalized=raw.includes("_")?normalizeSymbol(raw):quote?`${String(m.baseAsset||raw.replace(/IRT$/i,"")).toUpperCase()}/${quote}`:normalizeSymbol(raw);
+   return normalized;
+ }).filter((s:string)=>s.endsWith("/IRT")&&!STABLES.has(s.split("/")[0]));
  const selected=markets.slice(0,MAX_MARKETS);
- const results=await mapLimit(selected,4,async(symbol)=>{
-  const ts=await trades(symbol,100);
-  if(!ts.length)return null;
-  const first=numberOf(ts[ts.length-1]?.price),last=numberOf(ts[0]?.price);if(!last)return null;
-  const prices=ts.map((t:any)=>numberOf(t.price)).filter(Boolean);
-  const quoteVolume=ts.reduce((s:number,t:any)=>s+numberOf(t.quoteQty||numberOf(t.price)*numberOf(t.qty)),0);
-  let bid:number|undefined,ask:number|undefined;try{const ob=await depth(symbol,5);const bids=Array.isArray(ob?.bids)?ob.bids:[],asks=Array.isArray(ob?.asks)?ob.asks:[];bid=numberOf(bids[0]?.[0])||undefined;ask=numberOf(asks[0]?.[0])||undefined;}catch{}
-  return {symbol,last,changePct:first?((last-first)/first)*100:0,quoteVolume,bid,ask,high:prices.length?Math.max(...prices):undefined,low:prices.length?Math.min(...prices):undefined};
- });
- return results.filter(Boolean).sort((a:any,b:any)=>b.quoteVolume-a.quoteVolume) as Ticker[];
-}
-export async function fetchTabdealTickers():Promise<Ticker[]>{
- const now=Date.now();if(tickerCache&&now-tickerCache.at<CACHE_MS)return tickerCache.data;
- if(tickerPromise)return tickerPromise;
- tickerPromise=loadTickers().then(data=>{tickerCache={at:Date.now(),data};return data}).finally(()=>{tickerPromise=null});
- return tickerPromise;
-}
+ const results=await mapLimit(selected,4,async(symbol)=>{const ts=await trades(symbol,100);if(!ts.length)return null;const first=numberOf(ts[ts.length-1]?.price),last=numberOf(ts[0]?.price);if(!last)return null;const prices=ts.map((t:any)=>numberOf(t.price)).filter(Boolean);const quoteVolume=ts.reduce((s:number,t:any)=>s+numberOf(t.quoteQty||numberOf(t.price)*numberOf(t.qty)),0);let bid:number|undefined,ask:number|undefined;try{const ob=await depth(symbol,5);const bids=Array.isArray(ob?.bids)?ob.bids:[],asks=Array.isArray(ob?.asks)?ob.asks:[];bid=numberOf(bids[0]?.[0])||undefined;ask=numberOf(asks[0]?.[0])||undefined}catch{}return {symbol,last,changePct:first?((last-first)/first)*100:0,quoteVolume,bid,ask,high:prices.length?Math.max(...prices):undefined,low:prices.length?Math.min(...prices):undefined};});return results.filter(Boolean).sort((a:any,b:any)=>b.quoteVolume-a.quoteVolume) as Ticker[];}
+export async function fetchTabdealTickers():Promise<Ticker[]>{const now=Date.now();if(tickerCache&&now-tickerCache.at<CACHE_MS)return tickerCache.data;if(tickerPromise)return tickerPromise;tickerPromise=loadTickers().then(data=>{tickerCache={at:Date.now(),data};return data}).finally(()=>{tickerPromise=null});return tickerPromise;}
 function aggregateTrades(raw:any[],intervalMs:number):Candle[]{const sorted=raw.map((r:any)=>({ts:numberOf(r.time),price:numberOf(r.price),qty:numberOf(r.qty)})).filter(x=>x.ts&&x.price).sort((a,b)=>a.ts-b.ts);const buckets=new Map<number,Candle>();for(const t of sorted){const key=Math.floor(t.ts/intervalMs)*intervalMs;const c=buckets.get(key);const v=t.price*t.qty;if(!c)buckets.set(key,{ts:key,open:t.price,high:t.price,low:t.price,close:t.price,volume:v});else{c.high=Math.max(c.high,t.price);c.low=Math.min(c.low,t.price);c.close=t.price;c.volume+=v;}}return [...buckets.values()].sort((a,b)=>a.ts-b.ts);}
 export async function fetchTabdealCandles(symbol:string,bar:string="1m",limit=100):Promise<Candle[]>{const raw=await trades(symbol,1000);const b=bar.toLowerCase();const intervalMs=b==="1m"?60000:b==="3m"?180000:b==="5m"?300000:b==="15m"?900000:b==="30m"?1800000:b==="1h"?3600000:b==="4h"?14400000:86400000;return aggregateTrades(raw,intervalMs).slice(-Math.min(limit,300));}
 export async function fetchOkxTickers():Promise<Ticker[]>{return fetchTabdealTickers();}
@@ -53,6 +37,5 @@ export function sma(values:number[],period:number):number|null{if(values.length<
 export function ema(values:number[],period:number):number|null{if(values.length<period)return null;let v=values.slice(0,period).reduce((a,b)=>a+b,0)/period;const m=2/(period+1);for(let i=period;i<values.length;i++)v=(values[i]-v)*m+v;return v;}
 export function rsi(values:number[],period=14):number|null{if(values.length<period+1)return null;let g=0,l=0;for(let i=values.length-period;i<values.length;i++){const d=values[i]-values[i-1];if(d>=0)g+=d;else l-=d;}const ag=g/period,al=l/period;if(al===0)return 100;return 100-100/(1+ag/al);}
 export function atr(candles:Candle[],period=14):number|null{if(candles.length<period+1)return null;let s=0;for(let i=candles.length-period;i<candles.length;i++){const c=candles[i],p=candles[i-1];s+=Math.max(c.high-c.low,Math.abs(c.high-p.close),Math.abs(c.low-p.close));}return s/period;}
-
 export type Opportunity={symbol:string;score:number;action:string;category:string;confidence:number;entry:number|null;stopLoss:number|null;tp1:number|null;tp2:number|null;riskReward:number|null;reasons:string[];warnings:string[];direction:string;changePct:number;liquidity:number;price:number};
 export function analyzeSymbol(ticker:Ticker,candles:Candle[]):Opportunity|null{if(candles.length<50)return null;const closes=candles.map(c=>c.close),price=ticker.last||closes.at(-1)!;const reasons:string[]=[],warnings:string[]=[];let buy=0,sell=0,w=0;const e9=ema(closes,9),e21=ema(closes,21);if(e9!=null&&e21!=null){w++;if(e9>e21&&price>e9){buy+=78;reasons.push("روند کوتاه‌مدت EMA صعودی است.");}else if(e9<e21&&price<e9){sell+=78;reasons.push("روند کوتاه‌مدت EMA نزولی است.");}}const s50=sma(closes,50);if(s50!=null){w+=1.05;if(price>s50){buy+=70;reasons.push("قیمت بالای SMA50 قرار دارد.");}else{sell+=70;reasons.push("قیمت زیر SMA50 قرار دارد.");}}const r=rsi(closes);if(r!=null){w+=.9;if(r>=50&&r<=68){buy+=70;reasons.push(`RSI مومنتوم صعودی سالم (${r.toFixed(1)}).`);}else if(r>=32&&r<50){sell+=70;reasons.push(`RSI مومنتوم نزولی (${r.toFixed(1)}).`);}else if(r>75)warnings.push(`RSI بیش‌خرید (${r.toFixed(1)}).`);else if(r<25)warnings.push(`RSI بیش‌فروش (${r.toFixed(1)}).`);}if(candles.length>=21){let av=0;for(let i=candles.length-21;i<candles.length-1;i++)av+=candles[i].volume;av/=20;const vr=av?candles.at(-1)!.volume/av:1;if(vr>=1.8){w++;if(price>=closes.at(-2)!){buy+=80;reasons.push(`حجم نسبی ${vr.toFixed(1)}x همراه با رشد قیمت.`);}else{sell+=80;reasons.push(`حجم نسبی ${vr.toFixed(1)}x همراه با افت قیمت.`);}}}if(ticker.changePct>=5){buy+=40;reasons.push(`تغییر اخیر +${ticker.changePct.toFixed(1)}%.`);}else if(ticker.changePct<=-5){sell+=40;reasons.push(`تغییر اخیر ${ticker.changePct.toFixed(1)}%.`);}const total=buy+sell;let direction="NEUTRAL",score=50;if(total){if(buy>sell*1.15){direction="BUY";score=Math.min(100,buy/(w*80||1)*100);}else if(sell>buy*1.15){direction="SELL";score=Math.min(100,sell/(w*80||1)*100);}}score=Math.round(Math.max(0,Math.min(100,score))*10)/10;const liq=Math.min(100,Math.max(10,ticker.quoteVolume/10000000*50));if(liq<45)warnings.push("نقدشوندگی نسبتاً پایین.");const a=atr(candles);let entry=null,stopLoss=null,tp1=null,tp2=null,rr=null;if(a&&direction==="BUY"){entry=price;stopLoss=price-1.5*a;const risk=price-stopLoss;tp1=price+2*risk;tp2=price+3*risk;rr=2;}else if(a&&direction==="SELL"){entry=price;stopLoss=price+1.5*a;const risk=stopLoss-price;tp1=price-2*risk;tp2=price-3*risk;rr=2;}let category="WAIT";if(ticker.changePct>=8&&liq>=40&&direction!=="SELL")category="PUMP_WATCH";else if(direction==="SELL"&&score>=75)category="STRONG_SELL";else if(direction==="SELL"&&score>=55)category="SELL_CANDIDATE";else if(score>=75&&direction==="BUY"&&liq>=50)category="STRONG_BUY";else if(score>=60&&direction==="BUY")category="BUY_CANDIDATE";else if(score<40)category="AVOID";else if(liq<40)category="HIGH_RISK";if(!reasons.length)reasons.push("شرایط هنوز برای ورود با کیفیت کافی نیست.");const action=["STRONG_BUY","BUY_CANDIDATE"].includes(category)?"BUY":["STRONG_SELL","SELL_CANDIDATE"].includes(category)?"SELL":category;return {symbol:ticker.symbol,score,action,category,confidence:Math.round(Math.max(0,Math.min(99,score-(100-liq)*.15))),entry,stopLoss,tp1,tp2,riskReward:rr,reasons:reasons.slice(0,6),warnings:warnings.slice(0,4),direction,changePct:ticker.changePct,liquidity:Math.round(liq*10)/10,price};}

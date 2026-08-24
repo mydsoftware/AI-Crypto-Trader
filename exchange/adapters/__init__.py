@@ -1,25 +1,13 @@
-"""
-آداپترهای صرافی — فقط داده عمومی بازار.
-
-ExchangeAdapter
-    ├── BinanceAdapter
-    ├── BybitAdapter
-    ├── OKXAdapter
-    └── KrakenAdapter
-"""
-from .base import (
-    ExchangeAdapter,
-    OHLCV,
-    OrderBookLevel,
-    OrderBookSnapshot,
-    TickerData,
-)
+"""آداپترهای صرافی — فقط داده عمومی بازار."""
+from .base import ExchangeAdapter, OHLCV, OrderBookLevel, OrderBookSnapshot, TickerData
 from .binance import BinanceAdapter
 from .bybit import BybitAdapter
 from .okx import OKXAdapter
 from .kraken import KrakenAdapter
+from .tabdeal import TabdealAdapter
 
 ADAPTERS: dict[str, type[ExchangeAdapter]] = {
+    "tabdeal": TabdealAdapter,
     "binance": BinanceAdapter,
     "bybit": BybitAdapter,
     "okx": OKXAdapter,
@@ -27,8 +15,8 @@ ADAPTERS: dict[str, type[ExchangeAdapter]] = {
 }
 
 
-def get_adapter(name: str = "binance", **kwargs) -> ExchangeAdapter:
-    """ساخت آداپتر بر اساس نام."""
+def get_adapter(name: str = "tabdeal", **kwargs) -> ExchangeAdapter:
+    """ساخت آداپتر بر اساس نام صرافی."""
     cls = ADAPTERS.get(name.lower())
     if cls is None:
         raise ValueError(f"صرافی پشتیبانی‌نشده: {name}. گزینه‌ها: {list(ADAPTERS)}")
@@ -36,15 +24,7 @@ def get_adapter(name: str = "binance", **kwargs) -> ExchangeAdapter:
 
 
 __all__ = [
-    "ExchangeAdapter",
-    "TickerData",
-    "OHLCV",
-    "OrderBookLevel",
-    "OrderBookSnapshot",
-    "BinanceAdapter",
-    "BybitAdapter",
-    "OKXAdapter",
-    "KrakenAdapter",
-    "ADAPTERS",
-    "get_adapter",
+    "ExchangeAdapter", "TickerData", "OHLCV", "OrderBookLevel", "OrderBookSnapshot",
+    "BinanceAdapter", "BybitAdapter", "OKXAdapter", "KrakenAdapter", "TabdealAdapter",
+    "ADAPTERS", "get_adapter",
 ]

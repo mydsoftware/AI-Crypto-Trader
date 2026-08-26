@@ -9,7 +9,8 @@ from database.repository import CandleRepository
 from market.history_cache import HistoryCache
 from market.timeframe_aggregator import TimeframeAggregator
 
-class HistoricalDataManager:
+
+class HistoryManager:
 
     def __init__(
         self,
@@ -18,8 +19,8 @@ class HistoricalDataManager:
 
         self.repository = repository
         self.cache = HistoryCache()
-
         self.aggregator = TimeframeAggregator()
+
     def prices(
         self,
         symbol: str,
@@ -48,31 +49,24 @@ class HistoricalDataManager:
         limit: int = 500,
     ):
 
-        cached = self.cache.get(
-            symbol
-        )
+        cached = self.cache.get(symbol)
 
         if cached is not None:
-
             return cached
-
 
         snapshots = self.repository.last_snapshots(
             symbol=symbol,
             limit=limit,
         )
 
-
         candles = self.aggregator.build_1m(
             snapshots
         )
-
 
         self.cache.set(
             symbol,
             candles,
         )
-
 
         return candles
 
@@ -82,12 +76,12 @@ class HistoricalDataManager:
         minimum: int,
     ) -> bool:
 
-        prices = self.prices(
-            symbol=symbol,
-            limit=minimum,
-        )
-
-        return len(prices) >= minimum
+        return len(
+            self.candles(
+                symbol=symbol,
+                limit=minimum,
+            )
+        ) >= minimum
 
     def count(
         self,
@@ -97,3 +91,7 @@ class HistoricalDataManager:
         return self.repository.count(
             symbol=symbol,
         )
+
+
+# Backward-compatible alias for existing callers.
+HistoricalDataManager = HistoryManager

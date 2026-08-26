@@ -24,9 +24,10 @@ from models.analysis_result import AnalysisResult
 
 from analysis.order_flow import OrderFlowEngine
 
-from market.history_manager import HistoricalDataManager
+from market.history_manager import HistoryManager
 
 from analysis.analysis_cache import AnalysisCache
+
 
 class AnalysisEngine:
 
@@ -37,7 +38,7 @@ class AnalysisEngine:
 
         self.repository = repository
 
-        self.history = HistoricalDataManager(
+        self.history = HistoryManager(
             repository
         )
 
@@ -70,11 +71,18 @@ class AnalysisEngine:
         )
 
         self.analysis_cache = AnalysisCache()
-        
+
     def analyze(
         self,
         symbol: str,
     ) -> AnalysisResult | None:
+
+        cached = self.analysis_cache.get(
+            symbol
+        )
+
+        if cached is not None:
+            return cached
 
         candles = self.history.candles(
             symbol=symbol,
@@ -94,9 +102,6 @@ class AnalysisEngine:
             for candle in candles
         ]
 
-        if len(prices) < 35:
-            return None
-
         indicators = IndicatorPipeline.from_prices(
             prices,
         )
@@ -108,11 +113,8 @@ class AnalysisEngine:
         current_price = prices[-1]
 
         breakout = self.breakout.evaluate(
-
             current_price=current_price,
-
             support=sr.support,
-
             resistance=sr.resistance,
         )
 
@@ -146,27 +148,21 @@ class AnalysisEngine:
         if breakout.breakout_up:
 
             pullback = self.pullback.evaluate(
-
                 current_price=current_price,
-
                 level=sr.resistance,
             )
 
         elif breakout.breakout_down:
 
             pullback = self.pullback.evaluate(
-
                 current_price=current_price,
-
                 level=sr.support,
             )
 
         else:
 
             pullback = self.pullback.evaluate(
-
                 current_price=current_price,
-
                 level=current_price,
             )
 
@@ -188,41 +184,22 @@ class AnalysisEngine:
         )
 
         signal_result = evaluate(
-
             ema9=indicators.ema9,
-
             ema21=indicators.ema21,
-
             rsi14=indicators.rsi,
-
             macd=indicators.macd,
-
             signal=indicators.signal,
-
             breakout_valid=breakout_filter.valid,
-
             pullback_detected=pullback.detected,
-
             high_volume=volume.high_volume,
-
             buy_side_liquidity=liquidity.buy_side_liquidity,
-
             sell_side_liquidity=liquidity.sell_side_liquidity,
-
             order_flow_signal=order_flow.signal,
         )
 
-        return AnalysisResult(
-
-            # ======================================
-            # Symbol
-            # ======================================
+        result = AnalysisResult(
 
             symbol=symbol,
-
-            # ======================================
-            # Indicators
-            # ======================================
 
             ema9=indicators.ema9,
             ema21=indicators.ema21,
@@ -232,10 +209,6 @@ class AnalysisEngine:
             macd=indicators.macd,
             signal_line=indicators.signal,
             histogram=indicators.histogram,
-
-            # ======================================
-            # Support / Resistance
-            # ======================================
 
             support=sr.support,
             resistance=sr.resistance,
@@ -248,139 +221,58 @@ class AnalysisEngine:
                 sr.distance_to_resistance
             ),
 
-            # ======================================
-            # Breakout
-            # ======================================
-
             breakout_up=breakout.breakout_up,
-
             breakout_down=breakout.breakout_down,
-
             breakout_status=breakout.status,
 
-            # ======================================
-            # Breakout Filter
-            # ======================================
-
-            breakout_valid=(
-                breakout_filter.valid
-            ),
-
+            breakout_valid=breakout_filter.valid,
             breakout_distance_percent=(
                 breakout_filter.distance_percent
             ),
-
             breakout_threshold=(
                 breakout_filter.threshold_percent
             ),
 
-            # ======================================
-            # Pullback
-            # ======================================
-
-            pullback_detected=(
-                pullback.detected
-            ),
-
-            pullback_status=(
-                pullback.status
-            ),
-
+            pullback_detected=pullback.detected,
+            pullback_status=pullback.status,
             pullback_distance_percent=(
                 pullback.distance_percent
             ),
 
-            # ======================================
-            # Volume
-            # ======================================
+            current_volume=volume.current_volume,
+            average_volume=volume.average_volume,
+            volume_ratio=volume.volume_ratio,
+            high_volume=volume.high_volume,
+            volume_status=volume.status,
 
-            current_volume=(
-                volume.current_volume
-            ),
-
-            average_volume=(
-                volume.average_volume
-            ),
-
-            volume_ratio=(
-                volume.volume_ratio
-            ),
-
-            high_volume=(
-                volume.high_volume
-            ),
-
-            volume_status=(
-                volume.status
-            ),
-
-            # ======================================
-            # Liquidity
-            # ======================================
-
-            equal_highs=(
-                liquidity.equal_highs
-            ),
-
-            equal_lows=(
-                liquidity.equal_lows
-            ),
-
+            equal_highs=liquidity.equal_highs,
+            equal_lows=liquidity.equal_lows,
             buy_side_liquidity=(
                 liquidity.buy_side_liquidity
             ),
-
             sell_side_liquidity=(
                 liquidity.sell_side_liquidity
             ),
+            liquidity_zone=liquidity.liquidity_zone,
+            equal_high_price=liquidity.equal_high_price,
+            equal_low_price=liquidity.equal_low_price,
 
-            liquidity_zone=(
-                liquidity.liquidity_zone
-            ),
-
-            equal_high_price=(
-                liquidity.equal_high_price
-            ),
-
-            equal_low_price=(
-                liquidity.equal_low_price
-            ),
-
-            # ======================================
-            # Order Flow
-            # ======================================
-
-            buy_volume=(
-                order_flow.buy_volume
-            ),
-
-            sell_volume=(
-                order_flow.sell_volume
-            ),
-
-            delta=(
-                order_flow.delta
-            ),
-
-            imbalance=(
-                order_flow.imbalance
-            ),
-
-            order_flow_signal=(
-                order_flow.signal
-            ),
-
-            # ======================================
-            # Final Result
-            # ======================================
+            buy_volume=order_flow.buy_volume,
+            sell_volume=order_flow.sell_volume,
+            delta=order_flow.delta,
+            imbalance=order_flow.imbalance,
+            order_flow_signal=order_flow.signal,
 
             score=signal_result["score"],
-
             signal=signal_result["signal"],
-
             ema_signal=signal_result["details"]["ema"],
-
             rsi_signal=signal_result["details"]["rsi"],
-
             macd_signal=signal_result["details"]["macd"],
         )
+
+        self.analysis_cache.set(
+            symbol,
+            result,
+        )
+
+        return result
